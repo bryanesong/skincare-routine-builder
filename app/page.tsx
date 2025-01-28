@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { motion, useAnimation } from 'framer-motion'
 import { useInView } from 'react-intersection-observer'
-import { Button } from "@/app/components/ui/button"
+import { Button } from "@/components/ui/button"
 import { ArrowRight, Star, Shield, Sparkles, Users, Search } from 'lucide-react'
 import Header from '@/app/components/Header'
 import Footer from '@/app/components/Footer'
