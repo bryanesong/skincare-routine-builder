@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import Header from "@/app/components/Header"
 import Footer from "@/app/components/Footer"
+import Link from "next/link"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -84,34 +85,21 @@ export default function LoginPage() {
                     "Login"
                   )}
                 </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => router.push("/signup")}
-                >
-                  Create Account
-                </Button>
+                <div className="text-sm text-center">
+                  <Link href="/forgot-password" className="font-medium text-primary hover:text-primary/80">
+                    Forgot your password?
+                  </Link>
+                </div>
+                <div className="text-sm text-center">
+                  Don't have an account?{' '}
+                  <Link href="/signup" className="font-medium text-primary hover:text-primary/80">
+                    Sign up
+                  </Link>
+                </div>
               </CardFooter>
             </form>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full">Log in</Button>
-            <div className="text-sm text-center">
-              <Link href="/forgot-password" className="font-medium text-primary hover:text-primary/80">
-                Forgot your password?
-              </Link>
-            </div>
-            <div className="text-sm text-center">
-              Don't have an account?{' '}
-              {/* TODO: Add sign up page */}
-              <Link href="" className="font-medium text-primary hover:text-primary/80">
-                Sign up
-              </Link>
-              
-            </div>
-          </CardFooter>
-        </Card>
+          </Card>
+        </div>
       </main>
       <Footer />
     </div>
