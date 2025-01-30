@@ -40,9 +40,11 @@ export default function LoginPage() {
             </div>
             <div className="text-sm text-center">
               Don't have an account?{' '}
-              <Link href="/signup" className="font-medium text-primary hover:text-primary/80">
+              {/* TODO: Add sign up page */}
+              <Link href="" className="font-medium text-primary hover:text-primary/80">
                 Sign up
               </Link>
+              
             </div>
           </CardFooter>
         </Card>
