@@ -22,7 +22,7 @@ export default function SignupPage() {
     e.preventDefault()
     setLoading(true)
     setError("")
-
+    /* TODO: Implement signup logic 
     try {
       const response = await fetch("/api/auth/signup", {
         method: "POST",
@@ -45,6 +45,7 @@ export default function SignupPage() {
     } finally {
       setLoading(false)
     }
+    */
   }
 
   return (
