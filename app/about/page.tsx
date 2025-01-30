@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import { Button } from "@/app/components/ui/button"
+import { Button } from "@/components/ui/button"
 import Header from '@/app/components/Header'
 import Footer from '@/app/components/Footer'
 
