@@ -2,15 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { Button } from "@/app/components/ui/button"
+import { usePathname } from 'next/navigation'
+import { Button } from "@/components/ui/button"
 import { Menu } from 'lucide-react'
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()
-  const router = useRouter()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -45,17 +44,11 @@ export default function Header() {
             ))}
           </nav>
           <div className="hidden md:flex items-center gap-4">
-            <Button
-              variant="ghost"
-              onClick={() => router.push("/build")}
-            >
-              Build Routine
+            <Button asChild variant="ghost">
+              <Link href="/login">Log in</Link>
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => router.push("/login")}
-            >
-              Login
+            <Button asChild>
+              <Link href="/build">Start Building</Link>
             </Button>
           </div>
           <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
@@ -76,19 +69,11 @@ export default function Header() {
                 {item.label}
               </Link>
             ))}
-            <Button
-              variant="ghost"
-              className="justify-start"
-              onClick={() => router.push("/build")}
-            >
-              Build Routine
+            <Button asChild variant="ghost" className="justify-start">
+              <Link href="/login">Log in</Link>
             </Button>
-            <Button
-              variant="outline"
-              className="justify-start"
-              onClick={() => router.push("/login")}
-            >
-              Login
+            <Button asChild className="justify-start">
+              <Link href="/build">Start Building</Link>
             </Button>
           </nav>
         </div>
