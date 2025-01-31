@@ -104,21 +104,25 @@ const ClimateStep = forwardRef(({ formData, onNext }: ClimateStepProps, ref) => 
                 </DialogContent>
             </Dialog>
 
-            <div className="grid grid-cols-3 gap-4 items-center justify-center">
-                {climateButtons.map((item) => (
-                    <button
-                        key={item.id}
-                        onClick={() => handleClimateToggle(item.label)}
-                        className={`size-32 text-black flex flex-col items-center justify-center p-4 drop-shadow-lg rounded-3xl transition-all duration-200 hover:bg-none ${
-                            selectedClimates.includes(item.label)
-                                ? 'translate-y-0.5 shadow-inner bg-[#B5D7C5] border-[#B5D7C5]'
-                                : '-translate-y-0.5 shadow-md bg-[#F6FFF8] border-[#F6FFF8]'
-                            }`}
-                    >
-                        <img src={item.icon} alt={`${item.label} image icon`} className="w-12 h-12 object-contain" />
-                        <span className="mt-2 text-sm break-words text-center">{item.label}</span>
-                    </button>
-                ))}
+            <div className="flex justify-center w-full">
+                <div className="grid grid-cols-3 gap-8 max-w-[600px] p-4">
+                    {climateButtons.map((item) => (
+                        <button
+                            key={item.id}
+                            onClick={() => handleClimateToggle(item.label)}
+                            className={`size-32 text-black flex flex-col items-center justify-center p-4 drop-shadow-lg rounded-3xl transition-all duration-200 hover:bg-none ${
+                                selectedClimates.includes(item.label)
+                                    ? 'translate-y-0.5 shadow-inner bg-[#B5D7C5] border-[#B5D7C5]'
+                                    : '-translate-y-0.5 shadow-md bg-[#F6FFF8] border-[#F6FFF8]'
+                                }`}
+                        >
+                            <div className="flex items-center justify-center w-12 h-12">
+                                <img src={item.icon} alt={`${item.label} image icon`} className="w-10 h-10 object-contain" />
+                            </div>
+                            <span className="mt-2 text-sm break-words text-center">{item.label}</span>
+                        </button>
+                    ))}
+                </div>
             </div>
         </div>
     );

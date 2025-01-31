@@ -46,7 +46,7 @@ export default function Header() {
           </nav>
           <div className="hidden md:flex items-center gap-4">
             <Button
-              variant="ghost"
+              variant="default"
               onClick={() => router.push("/build")}
             >
               Build Routine
@@ -77,7 +77,7 @@ export default function Header() {
               </Link>
             ))}
             <Button
-              variant="ghost"
+              variant="default"
               className="justify-start"
               onClick={() => router.push("/build")}
             >

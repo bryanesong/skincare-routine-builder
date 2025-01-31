@@ -147,14 +147,15 @@ export default function BuildPage() {
         <main className="flex-grow container mx-auto px-4 py-20">
           <h1 className="text-4xl font-bold text-center mb-8 text-pink-800">Your Personalized Skincare Routine</h1>
           <div className="max-w-2xl mx-auto">
-            <Card className="w-full">
-              <CardHeader>
+            <Card className="w-full bg-transparent border-none shadow-none">
+              <CardHeader className="bg-transparent">
                 <CardTitle>Your Skin Profile</CardTitle>
                 <CardDescription>Based on your responses</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-6 bg-transparent">
                 <div>
                   <h3 className="font-semibold mb-2">Skin Type</h3>
+                  
                   <ul className="list-disc pl-5">
                     {skinType.map((type: string) => (
                       <li key={type}>{type}</li>
@@ -184,7 +185,7 @@ export default function BuildPage() {
                   </pre>
                 </div>
               </CardContent>
-              <CardFooter className="flex flex-col sm:flex-row gap-4">
+              <CardFooter className="flex flex-col sm:flex-row gap-4 bg-transparent">
                 <Button 
                   onClick={() => {
                     setIsComplete(false)
@@ -240,15 +241,22 @@ export default function BuildPage() {
       <Header />
       <main className="flex-grow container mx-auto px-4 py-20">
         <h1 className="text-4xl font-bold text-center mb-8 text-pink-800">Build Your Perfect Skincare Routine</h1>
-        <div className="max-w-2xl mx-auto">
-          <Card className="w-full">
-            <CardHeader>
-              <CardTitle>{steps[currentStep].title}</CardTitle>
-              <CardDescription>
-                Step {currentStep + 1} of {steps.length}
-              </CardDescription>
+        <h2 className="text-s text-center mb-8 ">Answer a few questions about your skin and current routine, and we'll help you create a personalized skincare routine.</h2>
+        <div className="max-w-4xl mx-auto justify-center items-center">
+          <Card className="w-full bg-transparent border-none shadow-none">
+            <CardHeader className="bg-transparent">
+              <div className="flex justify-center items-center gap-6 mt-4">
+                {steps.map((step, index) => (
+                  <div 
+                    key={step.id} 
+                    className={`h-2.5 w-20 rounded-full transition-colors duration-300 ${
+                      index <= currentStep ? 'bg-pink-500' : 'bg-gray-100'
+                    }`}
+                  />
+                ))}
+              </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="bg-transparent">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentStep}
@@ -270,15 +278,49 @@ export default function BuildPage() {
                 </motion.div>
               </AnimatePresence>
             </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button onClick={handlePrevious} disabled={currentStep === 0} variant="outline">
+            <CardFooter className="flex justify-between bg-transparent">
+              <Button 
+                onClick={handlePrevious} 
+                disabled={currentStep === 0} 
+                variant="outline"
+                className="rounded-full border-pink-500 text-pink-500 hover:bg-pink-50 hover:text-pink-600 flex items-center gap-2"
+              >
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  width="16" 
+                  height="16" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                >
+                  <path d="M15 18l-6-6 6-6"/>
+                </svg>
                 Previous
               </Button>
               <Button 
                 onClick={handleNextButtonClick}
-                variant={currentStep === steps.length - 1 ? "default" : "outline"}
+                variant="outline"
+                className="rounded-full border-pink-500 text-pink-500 hover:bg-pink-50 hover:text-pink-600 flex items-center gap-2"
               >
                 {currentStep === steps.length - 1 ? "See Results" : "Next"}
+                {currentStep !== steps.length - 1 && (
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    width="16" 
+                    height="16" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                  >
+                    <path d="M9 18l6-6-6-6"/>
+                  </svg>
+                )}
               </Button>
             </CardFooter>
           </Card>

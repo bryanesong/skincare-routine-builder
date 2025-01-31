@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowRight, Star, Shield, Sparkles, Users, Search } from 'lucide-react'
 import Header from '@/app/components/Header'
 import Footer from '@/app/components/Footer'
+import BuildPage from "@/app/build/page"
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -41,7 +42,7 @@ function AnimatedSection({ children }: { children: React.ReactNode }) {
   )
 }
 
-export default function LandingPage() {
+export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -193,5 +194,4 @@ export default function LandingPage() {
       <Footer />
     </div>
   )
-}
-
+} 
