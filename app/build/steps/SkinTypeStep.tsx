@@ -106,7 +106,11 @@ const SkinTypeStep = forwardRef((props: SkinTypeStepProps, ref) => {
     getData: () => ({
       skinType: selectedTypes,
       skinConcerns: skinConcerns.filter((_, index) => selectedConcerns[index])
-    })
+    }),
+    reset: () => {
+      setSelectedTypes([])
+      setSelectedConcerns(new Array(skinConcerns.length).fill(false))
+    }
   }))
 
   return (

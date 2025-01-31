@@ -53,12 +53,18 @@ export default function BuildPage() {
     nightProducts: [],
   })
 
-
   const CurrentStepComponent = steps[currentStep].component
 
   // Remove the empty handleNext({}) call from the Next button
   // and create a ref to store the child component's data
   const childDataRef = useRef<any>(null)
+
+  // Create refs inside the component
+  const stepRefs = {
+    'skin-type': useRef<any>(null),
+    'climate': useRef<any>(null),
+    'products': useRef<any>(null),
+  }
 
   const handleNext = (data: any) => {
     console.log("data before setFormData", data)
@@ -139,7 +145,6 @@ export default function BuildPage() {
     setCurrentStep((prev) => Math.max(prev - 1, 0))
   }
 
-
   if (isComplete) {
     return (
       <div className="min-h-screen flex flex-col bg-gradient-to-b from-pink-50 to-white">
@@ -191,6 +196,18 @@ export default function BuildPage() {
                     setIsComplete(false)
                     setCurrentStep(0)
                     setIsSaved(false)
+                    // Reset all form data states
+                    setSkinType([])
+                    setSkinConcerns([])
+                    setClimate([])
+                    setPreferences({
+                      morningProducts: [],
+                      nightProducts: [],
+                    })
+                    // Reset UI state in each step component
+                    stepRefs['skin-type'].current?.reset?.()
+                    stepRefs['climate'].current?.reset?.()
+                    stepRefs['products'].current?.reset?.()
                   }}
                   variant="outline"
                 >

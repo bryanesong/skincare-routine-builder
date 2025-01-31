@@ -62,7 +62,11 @@ const ClimateStep = forwardRef(({ formData, onNext }: ClimateStepProps, ref) => 
     useImperativeHandle(ref, () => ({
         getData: () => ({
             climate: selectedClimates
-        })
+        }),
+        reset: () => {
+            console.log('resetting climate')
+            setSelectedClimates(new Array(climateButtons.length).fill(false))
+        }
     }));
 
     const handleClimateToggle = (climate: string) => {
