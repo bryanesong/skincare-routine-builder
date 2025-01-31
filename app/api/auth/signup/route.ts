@@ -1,10 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
 
 // Handle GET requests
 export const GET = async (request: NextRequest) => {
@@ -26,10 +22,7 @@ export const POST = async (request: NextRequest) => {
   try {
     const { email, password } = await request.json()
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    })
+    const { data, error } = { data: null, error: null }
 
     if (error) {
       return NextResponse.json(
