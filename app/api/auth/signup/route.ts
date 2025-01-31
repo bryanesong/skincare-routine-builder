@@ -1,16 +1,28 @@
 import { createClient } from '@supabase/supabase-js'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-export async function GET() {
-  return NextResponse.json({ message: 'Method not allowed' }, { status: 405 })
+// Handle GET requests
+export const GET = async (request: NextRequest) => {
+  return NextResponse.json(
+    { message: 'Method not allowed' },
+    { status: 405 }
+  )
 }
 
-export async function POST(request: Request) {
+// Handle POST requests
+export const POST = async (request: NextRequest) => {
+  if (request.method !== 'POST') {
+    return NextResponse.json(
+      { message: 'Method not allowed' },
+      { status: 405 }
+    )
+  }
+
   try {
     const { email, password } = await request.json()
 
