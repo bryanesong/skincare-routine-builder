@@ -111,10 +111,10 @@ const ClimateStep = forwardRef(({ formData, onNext }: ClimateStepProps, ref) => 
             <div className="flex justify-center w-full">
                 <div className="grid grid-cols-3 gap-8 max-w-[600px] p-4">
                     {climateButtons.map((item) => (
-                        <button
+                        <Button
                             key={item.id}
                             onClick={() => handleClimateToggle(item.label)}
-                            className={`size-32 text-black flex flex-col items-center justify-center p-4 drop-shadow-lg rounded-3xl transition-all duration-200 hover:bg-none ${
+                            className={`size-32 text-black flex flex-col items-center justify-center p-4 drop-shadow-lg rounded-3xl transition-all duration-200 ${
                                 selectedClimates.includes(item.label)
                                     ? 'translate-y-0.5 shadow-inner bg-[#B5D7C5] border-[#B5D7C5]'
                                     : '-translate-y-0.5 shadow-md bg-[#F6FFF8] border-[#F6FFF8]'
@@ -124,7 +124,7 @@ const ClimateStep = forwardRef(({ formData, onNext }: ClimateStepProps, ref) => 
                                 <img src={item.icon} alt={`${item.label} image icon`} className="w-10 h-10 object-contain" />
                             </div>
                             <span className="mt-2 text-sm break-words text-center">{item.label}</span>
-                        </button>
+                        </Button>
                     ))}
                 </div>
             </div>

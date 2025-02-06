@@ -156,7 +156,7 @@ const SkinTypeStep = forwardRef((props: SkinTypeStepProps, ref) => {
           <Button
             key={id}
             onClick={() => handleSkinTypeSelect(id)}
-            className={`size-32 text-black flex-col p-8 drop-shadow-lg rounded-3xl transition-all duration-200 hover:bg-none ${
+            className={`size-32 text-black flex-col p-8 drop-shadow-lg rounded-3xl transition-all duration-200 ${
               selectedTypes.includes(id)
                 ? 'translate-y-0.5 shadow-inner bg-[#B5D7C5] border-[#B5D7C5]'
                 : '-translate-y-0.5 shadow-md bg-[#F6FFF8] border-[#F6FFF8]'
