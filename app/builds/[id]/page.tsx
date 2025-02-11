@@ -24,9 +24,9 @@ export default async function RoutineDetail({ params }: { params: { id: string }
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-grow container mx-auto px-4 py-8 pt-16">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Main Content - Left Side */}
-          <div className="bg-white rounded-lg p-8">
+        <div className="grid grid-cols-3 gap-8">
+          {/* Main Content - Left Side (2/3 width) */}
+          <div className="col-span-2 bg-white rounded-lg p-8">
             {/* User Info */}
             <div className="flex items-center gap-4 mb-8">
               <Avatar className="h-16 w-16">
@@ -81,8 +81,8 @@ export default async function RoutineDetail({ params }: { params: { id: string }
             </div>
           </div>
 
-          {/* Comments Section - Right Side */}
-          <div className="bg-white rounded-lg p-8">
+          {/* Comments Section - Right Side (1/3 width) */}
+          <div className="col-span-1 bg-white rounded-lg p-8">
             <h2 className="text-lg font-semibold mb-4">Comments</h2>
             <div className="space-y-4">
               {Object.values(routine.comments).flat().map((comment: string, index: number) => (
