@@ -76,28 +76,34 @@ export default function Header() {
   // Separate useEffect for realtime subscription to ensure it runs when user changes
   useEffect(() => {
     if (!user) return
-    console.log('Realtime sub for user', user)
+    
     console.log('Setting up realtime subscription for user:', user.id)
+    
+    // Create a unique channel name
+    const channelName = `profile-changes-${user.id}-${Date.now()}`
+    
     const channel = supabase
-      .channel(`profile-changes-${user.id}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
-          event: '*', // Listen for all events (INSERT, UPDATE, DELETE) DONT FORGET TO ENABLE IN SUPABASE
+          event: '*', // Listen for all events (INSERT, UPDATE, DELETE)
           schema: 'public',
           table: 'user_data_personal',
           filter: `id=eq.${user.id}`
         },
         (payload) => {
           console.log('Realtime update received:', payload)
-          if (payload.new && 'avatar_url' in payload.new) {
-            console.log('User data avatar_url updated to:', payload.new.avatar_url)
-            setUserProfilePhoto(payload.new.avatar_url)
-          }
+          console.log('real time data avatar_url received:', payload.new['avatar_url'])
+          // Directly update from payload for immediate feedback
+          setUserProfilePhoto(payload.new['avatar_url'])
         }
       )
       .subscribe((status) => {
         console.log(`Realtime subscription status for ${user.id}:`, status)
+        if (status !== 'SUBSCRIBED') {
+          console.error('Failed to subscribe to realtime updates')
+        }
       })
 
     // Fetch the current avatar_url to ensure we have the latest
@@ -122,10 +128,10 @@ export default function Header() {
     fetchCurrentAvatar()
 
     return () => {
-      // console.log('Removing channel subscription for user:', user.id)
-      // supabase.removeChannel(channel)
+      console.log('Cleaning up realtime subscription for:', channelName)
+      supabase.removeChannel(channel)
     }
-  }, [user, supabase])
+  }, [user, supabase]) // Remove userProfilePhoto dependency to prevent re-subscriptions
 
   useEffect(() => {
     const handleScroll = () => {
