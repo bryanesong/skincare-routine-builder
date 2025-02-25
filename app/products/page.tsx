@@ -1,16 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Button } from "../components/ui/button"
+import { Input } from "../components/ui/input"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Slider } from "@/components/ui/slider"
+} from "../components/ui/select"
+import { Slider } from "../components/ui/slider"
 import Header from '@/app/components/Header'
 import Footer from '@/app/components/Footer'
 import ProductCard from '@/app/components/ProductCard'

@@ -1,8 +1,8 @@
 import { useState } from "react"
-import { Slider } from "@/components/ui/slider"
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
+import { Slider } from "../components/ui/slider"
+import { Switch } from "../components/ui/switch"
+import { Label } from "../components/ui/label"
+import { Button } from "../components/ui/button"
 import { Info } from "lucide-react"
 
 export default function ProductsStep({ formData, onNext }: { formData: any; onNext: (data: any) => void }) {

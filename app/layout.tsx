@@ -9,7 +9,7 @@ const poppins = Poppins({
 })
 
 export const metadata: Metadata = {
-  title: 'SkincarePicker - Build Your Perfect Routine',
+  title: 'BuildMySkincare - Build Your Perfect Routine',
   description: 'Create and share your perfect skincare routine with product compatibility checking',
 }
 

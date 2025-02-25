@@ -1,14 +1,14 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardFooter } from "../components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { Heart, MessageCircle, Share2 } from 'lucide-react';
 import Header from '@/app/components/Header';
 import Footer from '@/app/components/Footer';
 import { createClient } from '@/utils/supabase/client';
-import { Input } from "@/components/ui/input";
+import { Input } from "../components/ui/input";
 import { Check, ChevronsUpDown } from "lucide-react";
 import {
   Command,
@@ -16,15 +16,15 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
-} from "@/components/ui/command";
+} from "../components/ui/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "../components/ui/popover";
 import { cn } from '@/lib/utils';
-import MultiSelect from '@/components/MultiSelect';
-import BuildsFilters from "@/components/BuildsFilters";
+import MultiSelect from '../components/MultiSelect';
+import BuildsFilters from "../components/BuildsFilters";
 
 type Comments = {
   [userId: string]: string[];
