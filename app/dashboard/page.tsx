@@ -15,7 +15,17 @@ export default async function Dashboard() {
         redirect('/login')
     }
 
+    const { data: userData, error: userDataError } = await supabase
+        .from('user_data_personal')
+        .select('*')
+        .eq('id', data.user.id)
+        .single()
+
+    if (userDataError) {
+        console.error('Error fetching user data:', userDataError)
+    }
+
     return (
-        <DashboardContent user={data.user} />
+        <DashboardContent userData={userData} />
     )
 } 
