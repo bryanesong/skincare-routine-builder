@@ -70,7 +70,6 @@ export default function Header() {
     })
 
     return () => {
-
     }
   }, [supabase])
 
@@ -123,8 +122,8 @@ export default function Header() {
     fetchCurrentAvatar()
 
     return () => {
-      console.log('Removing channel subscription for user:', user.id)
-      supabase.removeChannel(channel)
+      // console.log('Removing channel subscription for user:', user.id)
+      // supabase.removeChannel(channel)
     }
   }, [user, supabase])
 
