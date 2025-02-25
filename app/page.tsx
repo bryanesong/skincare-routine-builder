@@ -5,11 +5,11 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { motion, useAnimation } from 'framer-motion'
 import { useInView } from 'react-intersection-observer'
-import { Button } from "@/components/ui/button"
+import { Button } from "./components/ui/button"
 import { ArrowRight, Star, Shield, Sparkles, Users, Search } from 'lucide-react'
-import Header from '@/app/components/Header'
-import Footer from '@/app/components/Footer'
-import BuildPage from "@/app/build/page"
+import Header from './components/Header'
+import Footer from './components/Footer'
+import BuildPage from "./build/page"
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -179,7 +179,7 @@ export default function Home() {
               >
                 <motion.h2 className="text-3xl sm:text-4xl font-bold mb-4" variants={fadeInUp}>Ready to build your perfect routine?</motion.h2>
                 <motion.p className="text-primary-foreground mb-8 max-w-2xl mx-auto" variants={fadeInUp}>
-                  Join thousands of others who have found their perfect skincare routine using SkincarePicker.
+                  Join thousands of others who have found their perfect skincare routine using BuildMySkincare.
                 </motion.p>
                 <Button size="lg" variant="secondary" asChild>
                   <Link href="/build">

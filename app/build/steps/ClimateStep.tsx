@@ -1,12 +1,12 @@
 import { forwardRef, useImperativeHandle, useState } from "react"
-import { Button } from "@/components/ui/button"
+import { Button } from "../../components/ui/button"
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-} from "@/components/ui/dialog"
+} from "../../components/ui/dialog"
 
 interface FormData {
     skinType: string[] | string;

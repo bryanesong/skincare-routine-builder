@@ -21,12 +21,21 @@ export const POST = async (request: NextRequest) => {
 
   try {
     const { email, password } = await request.json()
-
-    const { data, error } = { data: null, error: null }
+    
+    // Initialize Supabase client
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    
+    // Sign up the user
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    })
 
     if (error) {
       return NextResponse.json(
-        { error: error.message },
+        { error: error.message || 'An error occurred' },
         { status: 400 }
       )
     }
@@ -36,6 +45,7 @@ export const POST = async (request: NextRequest) => {
       { status: 201 }
     )
   } catch (error) {
+    console.error('Signup error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -1,7 +1,7 @@
 import Image from 'next/image'
-import { Button } from "@/components/ui/button"
-import Header from '@/app/components/Header'
-import Footer from '@/app/components/Footer'
+import { Button } from "../components/ui/button"
+import Header from '../components/Header'
+import Footer from '../components/Footer'
 
 export default function About() {
   return (
@@ -11,7 +11,7 @@ export default function About() {
         <section className="py-20 sm:py-32">
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto text-center animate-fade-in">
-              <h1 className="text-4xl font-bold mb-6">About SkincarePicker</h1>
+              <h1 className="text-4xl font-bold mb-6">About BuildMySkincare</h1>
               <p className="text-xl text-gray-600 mb-8">
                 We're on a mission to simplify skincare routines and help everyone achieve their best skin.
               </p>
@@ -25,7 +25,7 @@ export default function About() {
               <div className="animate-fade-in">
                 <h2 className="text-3xl font-bold mb-4">Our Story</h2>
                 <p className="text-gray-600 mb-4">
-                  SkincarePicker was born out of frustration with the overwhelming world of skincare products. Our founders, all skincare enthusiasts, realized that finding the right products and building an effective routine was far too complicated.
+                BuildMySkincare was born out of frustration with the overwhelming world of skincare products. Our founders, all skincare enthusiasts, realized that finding the right products and building an effective routine was far too complicated.
                 </p>
                 <p className="text-gray-600 mb-4">
                   We set out to create a platform that would make it easy for anyone to build a personalized skincare routine, regardless of their skin type or concerns. By combining expert knowledge with user data and advanced algorithms, we've created a tool that takes the guesswork out of skincare.
@@ -35,7 +35,7 @@ export default function About() {
               <div className="relative h-[400px] animate-fade-in">
                 <Image
                   src="/placeholder.svg?height=400&width=600"
-                  alt="SkincarePicker team"
+                  alt="BuildMySkincare team"
                   fill
                   className="object-cover rounded-lg shadow-lg"
                 />

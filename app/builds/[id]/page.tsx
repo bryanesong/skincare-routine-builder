@@ -1,14 +1,14 @@
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from '@/utils/supabase/component'
 import { notFound } from 'next/navigation'
 import Header from '@/app/components/Header'
 import Footer from '@/app/components/Footer'
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar"
+import { Button } from "../../components/ui/button"
 import { Heart, MessageCircle, Share2 } from 'lucide-react'
-import RoutineToggle from '@/app/components/RoutineToggle'
+import RoutineToggle from '../../components/RoutineToggle'
 
 export default async function RoutineDetail({ params }: { params: { id: string } }) {
-  const supabase = await createClient()
+  const supabase = createClient()
   
   const { data: routine, error } = await supabase
     .from('community_builds')

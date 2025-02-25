@@ -2,15 +2,14 @@
 
 import { useState, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "../components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card"
 import SkinTypeStep from "./steps/SkinTypeStep"
 import ClimateStep from "./steps/ClimateStep"
 import ProductsStep from "./steps/ProductsStep"
-import ResultsStep from "./steps/ResultsStep"
+
 import Header from "@/app/components/Header"
 import Footer from "@/app/components/Footer"
-import { createClient } from '@supabase/supabase-js'
 
 const steps = [
   { id: "skin-type", title: "Skin Type", component: SkinTypeStep },
