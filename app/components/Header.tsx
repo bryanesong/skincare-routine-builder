@@ -70,26 +70,25 @@ export default function Header() {
     })
 
     return () => {
-      console.log('Cleaning up auth subscription')
-      subscription.unsubscribe()
+
     }
   }, [supabase])
 
   // Separate useEffect for realtime subscription to ensure it runs when user changes
   useEffect(() => {
     if (!user) return
-
+    console.log('Realtime sub for user', user)
     console.log('Setting up realtime subscription for user:', user.id)
     const channel = supabase
       .channel(`profile-changes-${user.id}`)
       .on(
-        'postgres_changes', 
-        { 
+        'postgres_changes',
+        {
           event: '*', // Listen for all events (INSERT, UPDATE, DELETE) DONT FORGET TO ENABLE IN SUPABASE
-          schema: 'public', 
+          schema: 'public',
           table: 'user_data_personal',
-          filter: `id=eq.${user.id}` 
-        }, 
+          filter: `id=eq.${user.id}`
+        },
         (payload) => {
           console.log('Realtime update received:', payload)
           if (payload.new && 'avatar_url' in payload.new) {
@@ -109,18 +108,18 @@ export default function Header() {
         .select('avatar_url')
         .eq('id', user.id)
         .single()
-      
+
       if (error) {
         console.error('Error fetching current avatar:', error)
         return
       }
-      
+
       if (data && data.avatar_url !== userProfilePhoto) {
         console.log('Updated avatar from fetch:', data.avatar_url)
         setUserProfilePhoto(data.avatar_url)
       }
     }
-    
+
     fetchCurrentAvatar()
 
     return () => {
