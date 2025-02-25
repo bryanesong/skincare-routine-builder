@@ -19,7 +19,7 @@ const fadeInUp = {
   visible: { opacity: 1, y: 0 }
 }
 
-export async function CheckUser() {
+async function CheckUser() {
   const supabase = await createClient()
 
   const { data, error } = await supabase.auth.getUser()
