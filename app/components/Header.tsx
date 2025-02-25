@@ -14,37 +14,58 @@ export default function Header() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  
+  const [userProfilePhoto, setUserProfilePhoto] = useState<string | null>(null)
+
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
 
-  // Update the useEffect for auth
   useEffect(() => {
     console.log('Auth effect running')
-    
+
     const getUser = async () => {
-      console.log('Getting user...')
+      console.log('Header Getting user...')
       try {
         const { data: { user }, error } = await supabase.auth.getUser()
         if (error) {
-          console.error('Error fetching user:', error)
+          console.error('Header Error fetching user:', error)
           return
         }
-        console.log('Fetched user:', user)
+        console.log('Header Fetched user:', user)
         setUser(user)
+        if (!user) {
+          console.error('User not found')
+          return
+        }
+        const { data, error: profileError } = await supabase
+          .from('user_data_personal')
+          .select('avatar_url')
+          .eq('id', user.id)
+          .single()
+
+        if (profileError) {
+          console.error('Error fetching profile photo:', profileError)
+          return
+        } else {
+          console.log('Setting initial avatar_url:', data?.avatar_url)
+          setUserProfilePhoto(data?.avatar_url ?? null)
+        }
+
       } catch (error) {
-        console.error('Exception fetching user:', error)
+        console.error('Header Exception fetching user:', error)
       } finally {
         setIsLoading(false)
       }
     }
-    
+
     getUser()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth state changed:', event, session)
       setUser(session?.user ?? null)
+      if (!session?.user) {
+        setUserProfilePhoto(null)
+      }
       setIsLoading(false)
     })
 
@@ -52,7 +73,61 @@ export default function Header() {
       console.log('Cleaning up auth subscription')
       subscription.unsubscribe()
     }
-  }, [])  // Remove supabase from dependencies to prevent re-runs
+  }, [supabase])
+
+  // Separate useEffect for realtime subscription to ensure it runs when user changes
+  useEffect(() => {
+    if (!user) return
+
+    console.log('Setting up realtime subscription for user:', user.id)
+    const channel = supabase
+      .channel(`profile-changes-${user.id}`)
+      .on(
+        'postgres_changes', 
+        { 
+          event: '*', // Listen for all events (INSERT, UPDATE, DELETE) DONT FORGET TO ENABLE IN SUPABASE
+          schema: 'public', 
+          table: 'user_data_personal',
+          filter: `id=eq.${user.id}` 
+        }, 
+        (payload) => {
+          console.log('Realtime update received:', payload)
+          if (payload.new && 'avatar_url' in payload.new) {
+            console.log('User data avatar_url updated to:', payload.new.avatar_url)
+            setUserProfilePhoto(payload.new.avatar_url)
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log(`Realtime subscription status for ${user.id}:`, status)
+      })
+
+    // Fetch the current avatar_url to ensure we have the latest
+    const fetchCurrentAvatar = async () => {
+      const { data, error } = await supabase
+        .from('user_data_personal')
+        .select('avatar_url')
+        .eq('id', user.id)
+        .single()
+      
+      if (error) {
+        console.error('Error fetching current avatar:', error)
+        return
+      }
+      
+      if (data && data.avatar_url !== userProfilePhoto) {
+        console.log('Updated avatar from fetch:', data.avatar_url)
+        setUserProfilePhoto(data.avatar_url)
+      }
+    }
+    
+    fetchCurrentAvatar()
+
+    return () => {
+      console.log('Removing channel subscription for user:', user.id)
+      supabase.removeChannel(channel)
+    }
+  }, [user, supabase])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -83,7 +158,7 @@ export default function Header() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="text-2xl font-bold text-primary transition-colors hover:text-primary/80">
-          BuildMySkincare
+            BuildMySkincare
           </Link>
           <nav className="hidden md:flex items-center gap-8">
             {navItems.map((item) => (
@@ -115,10 +190,10 @@ export default function Header() {
                   className="flex items-center gap-2"
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 >
-                  {user.user_metadata?.avatar_url ? (
-                    <img 
-                      src={user.user_metadata.avatar_url} 
-                      alt={user.user_metadata?.full_name || user.email} 
+                  {userProfilePhoto ? (
+                    <img
+                      src={userProfilePhoto ?? undefined}
+                      alt={user.user_metadata?.full_name || user.email}
                       className="w-8 h-8 rounded-full object-cover"
                     />
                   ) : (
@@ -126,7 +201,7 @@ export default function Header() {
                   )}
                   <span>{user.user_metadata?.full_name || user.email}</span>
                 </Button>
-                
+
                 {isUserMenuOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 border">
                     <Link
