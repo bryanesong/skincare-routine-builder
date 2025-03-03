@@ -1,14 +1,14 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Button } from "../components/ui/button";
-import { Card, CardContent, CardFooter } from "../components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
+import { Button } from "@/app/components/ui/button";
+import { Card, CardContent, CardFooter } from "@/app/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { Heart, MessageCircle, Share2 } from 'lucide-react';
 import Header from '@/app/components/Header';
 import Footer from '@/app/components/Footer';
 import { createClient } from '@/utils/supabase/client';
-import { Input } from "../components/ui/input";
+import { Input } from "@/app/components/ui/input";
 import { Check, ChevronsUpDown } from "lucide-react";
 import {
   Command,
@@ -16,15 +16,15 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
-} from "../components/ui/command";
+} from "@/app/components/ui/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "../components/ui/popover";
+} from "@/app/components/ui/popover";
 import { cn } from '@/lib/utils';
-import MultiSelect from '../components/MultiSelect';
-import BuildsFilters from "../components/BuildsFilters";
+import MultiSelect from "@/app/components/MultiSelect";
+import BuildsFilters from "@/app/components/BuildsFilters";
 
 type Comments = {
   [userId: string]: string[];
@@ -32,9 +32,11 @@ type Comments = {
 
 type SkinRoutine = {
   id: number;
-  user_name: string;
-  avatar_url: string;
   skin_type: string[];
+  skin_concerns: string[];
+  climate: string[];
+  likes_id: string[];
+  shareable_id: string;
   routine_name: string;
   day_products: {
     product_name: string[];
@@ -45,8 +47,10 @@ type SkinRoutine = {
     product_id: string[];
   };
   routine_description: string;
-  likes: number;
   comments: Comments;
+  display_name?: string;
+  avatar_url?: string;
+  user_id?: string;
 };
 
 type FilterOption = {
@@ -87,6 +91,29 @@ export default function CommunityBuilds() {
     climateTypes: [],
     skinConcerns: [],
   });
+  
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  // Check if user is authenticated
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const supabase = createClient();
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error checking authentication:', error);
+          return;
+        }
+        
+        setIsAuthenticated(!!session);
+      } catch (err) {
+        console.error('Error checking authentication:', err);
+      }
+    }
+    
+    checkAuth();
+  }, []);
 
   const handleFilterChange = (filterType: string, value: string) => {
     setSelectedFilters((prev) => {
@@ -119,8 +146,36 @@ export default function CommunityBuilds() {
           throw supabaseError;
         }
 
-        setRoutines(data);
-        setFilteredRoutines(data);
+        // Fetch user data for each routine
+        //routine is a single row from the community_builds table
+        const routinesWithUserData = await Promise.all(
+          data.map(async (routine) => {
+            // Get user data from user_data_personal table
+            const { data: userData, error: userError } = await supabase
+              .from('user_data_personal')
+              .select('display_name, avatar_url')
+              .eq('id', routine.owner_user_id)
+              .single();
+
+            if (userError) {
+              console.error('Error fetching user data for display routine:', userError);
+              return {
+                ...routine,
+                display_name: 'Unknown User',
+                avatar_url: null
+              };
+            }
+
+            return {
+              ...routine,
+              display_name: userData?.display_name || 'Unknown User',
+              avatar_url: userData?.avatar_url || null
+            };
+          })
+        );
+
+        setRoutines(routinesWithUserData);
+        setFilteredRoutines(routinesWithUserData);
       } catch (err) {
         console.error('Error fetching routines:', err);
         setError('Failed to load routines');
@@ -320,7 +375,7 @@ export default function CommunityBuilds() {
                     onClick={() => handleFilterChange(filterType, value)}
                     className="ml-1 hover:text-blue-600"
                   >
-                    ×
+                    
                   </button>
                 </span>
               ))
@@ -329,7 +384,7 @@ export default function CommunityBuilds() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredRoutines.map((routine) => (
-              <Link href={`/builds/${routine.id}`} key={routine.id}>
+              <Link href={`/builds/${routine.shareable_id}`} key={routine.shareable_id}>
                 <Card
                   className="animate-fade-in hover:shadow-lg transition-shadow flex flex-col h-full cursor-pointer"
                 >
@@ -337,10 +392,10 @@ export default function CommunityBuilds() {
                     <div className="flex items-center gap-4 mb-4">
                       <Avatar>
                         <AvatarImage src={routine.avatar_url} />
-                        <AvatarFallback>{routine.user_name}</AvatarFallback>
+                        <AvatarFallback>{routine.display_name?.charAt(0) || routine.user_id?.charAt(0) || '?'}</AvatarFallback>
                       </Avatar>
                       <div>
-                        <h3 className="font-semibold">{routine.user_name}</h3>
+                        <h3 className="font-semibold">{routine.display_name || 'Unknown User'}</h3>
                         <p className="text-sm text-gray-500">{routine.routine_name}</p>
                       </div>
                     </div>
@@ -365,15 +420,19 @@ export default function CommunityBuilds() {
                       <div className="bg-white rounded-lg h-[110px] flex flex-col">
                         <h4 className="text-sm font-semibold text-indigo-600 mb-2">Morning Routine</h4>
                         <div className="relative flex-1">
-                          <ul className={`space-y-2 ${routine.day_products.product_name.length > 3 ? 'max-h-[88px] overflow-hidden' : ''}`}>
-                            {routine.day_products.product_name.map((productName, index) => (
-                              <li key={routine.day_products.product_id[index]} className="text-sm flex items-center gap-2">
-                                <span className="w-2 h-2 bg-yellow-500 rounded-full" />
-                                {productName}
-                              </li>
-                            ))}
-                          </ul>
-                          {routine.day_products.product_name.length > 3 && (
+                          {routine.day_products?.product_name?.length > 0 ? (
+                            <ul className={`space-y-2 ${routine.day_products.product_name.length > 3 ? 'max-h-[88px] overflow-hidden' : ''}`}>
+                              {routine.day_products.product_name.map((productName, index) => (
+                                <li key={routine.day_products.product_id[index]} className="text-sm flex items-center gap-2">
+                                  <span className="w-2 h-2 bg-yellow-500 rounded-full" />
+                                  {productName}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-sm text-gray-500 italic">No morning products selected</p>
+                          )}
+                          {routine.day_products?.product_name?.length > 3 && (
                             <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent" />
                           )}
                         </div>
@@ -382,15 +441,19 @@ export default function CommunityBuilds() {
                       <div className="bg-white rounded-lg h-[110px] flex flex-col">
                         <h4 className="text-sm font-semibold text-indigo-600 mb-2">Evening Routine</h4>
                         <div className="relative flex-1">
-                          <ul className={`space-y-2 ${routine.night_products.product_name.length > 3 ? 'max-h-[88px] overflow-hidden' : ''}`}>
-                            {routine.night_products.product_name.map((productName, index) => (
-                              <li key={routine.night_products.product_id[index]} className="text-sm flex items-center gap-2">
-                                <span className="w-2 h-2 bg-indigo-500 rounded-full" />
-                                {productName}
-                              </li>
-                            ))}
-                          </ul>
-                          {routine.night_products.product_name.length > 3 && (
+                          {routine.night_products?.product_name?.length > 0 ? (
+                            <ul className={`space-y-2 ${routine.night_products.product_name.length > 3 ? 'max-h-[88px] overflow-hidden' : ''}`}>
+                              {routine.night_products.product_name.map((productName, index) => (
+                                <li key={routine.night_products.product_id[index]} className="text-sm flex items-center gap-2">
+                                  <span className="w-2 h-2 bg-indigo-500 rounded-full" />
+                                  {productName}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-sm text-gray-500 italic">No evening products selected</p>
+                          )}
+                          {routine.night_products?.product_name?.length > 3 && (
                             <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent" />
                           )}
                         </div>
@@ -412,9 +475,15 @@ export default function CommunityBuilds() {
                   </CardContent>
                   <CardFooter className="bg-gray-50 px-6 py-4 mt-auto">
                     <div className="flex items-center justify-between w-full text-gray-500">
-                      <Button variant="ghost" size="sm" className="hover:text-red-500 transition-colors">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className={`hover:text-red-500 transition-colors ${!isAuthenticated && 'opacity-50 cursor-not-allowed'}`}
+                        disabled={!isAuthenticated}
+                        title={!isAuthenticated ? "Sign in to like" : ""}
+                      >
                         <Heart className="h-4 w-4 mr-2" />
-                        {routine.likes}
+                        {routine.likes_id?.length || 0}
                       </Button>
                       <Button variant="ghost" size="sm" className="hover:text-blue-500 transition-colors max-w-full">
                         <MessageCircle className="h-4 w-4 mr-2 flex-shrink-0" />
@@ -422,7 +491,11 @@ export default function CommunityBuilds() {
                           {Object.values(routine.comments).flat().length} comments
                         </span>
                       </Button>
-                      <Button variant="ghost" size="sm" className="hover:text-green-500 transition-colors">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="hover:text-green-500 transition-colors"
+                      >
                         <Share2 className="h-4 w-4 mr-2" />
                         Share
                       </Button>
@@ -432,6 +505,15 @@ export default function CommunityBuilds() {
               </Link>
             ))}
           </div>
+          
+          {!isAuthenticated && (
+            <div className="mt-8 text-center">
+              <p className="text-gray-600 mb-2">Sign in to like and comment on routines</p>
+              <Link href="/login">
+                <Button variant="outline">Sign In</Button>
+              </Link>
+            </div>
+          )}
         </div>
       </main>
       <Footer />

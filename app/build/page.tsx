@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card"
@@ -10,6 +10,24 @@ import ProductsStep from "./steps/ProductsStep"
 
 import Header from "@/app/components/Header"
 import Footer from "@/app/components/Footer"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import SkincareRoutineBuildTemplate from "../components/SkincareRoutineBuildTemplate"
+import { redirect } from "next/navigation"
+import { v4 as uuidv4 } from 'uuid'
+
+// Generate a user-friendly shareable ID based on a UUID
+function generateShareableId(uuid: string, length = 8) {
+  // Remove hyphens from the UUID
+  const cleanUuid = uuid.replace(/-/g, '');
+  
+  // Convert the UUID to a base-36 string (using 0-9 and a-z)
+  // This will make it more compact
+  const base36 = BigInt('0x' + cleanUuid).toString(36).toUpperCase();
+  
+  // Take the first 'length' characters to keep it short
+  // Add a prefix to make it clear this is a shareable ID
+  return 'SR-' + base36.substring(0, length);
+}
 
 const steps = [
   { id: "skin-type", title: "Skin Type", component: SkinTypeStep },
@@ -18,6 +36,7 @@ const steps = [
 ]
 
 // Initialize Supabase client
+const supabase = createClientComponentClient()
 
 interface FormData {
   skinType: string[];
@@ -40,6 +59,13 @@ export default function BuildPage() {
   const [isComplete, setIsComplete] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [userDisplayName, setUserDisplayName] = useState<string>("Guest")
+  const [routineName, setRoutineName] = useState<string>("Guest's Skin Routine")
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+
+  const [currentRoutineName, setCurrentRoutineName] = useState<string | null>(null)
 
   const [skinType, setSkinType] = useState<string[]>([])
   const [skinConcerns, setSkinConcerns] = useState<string[]>([])
@@ -65,9 +91,107 @@ export default function BuildPage() {
     'products': useRef<any>(null),
   }
 
+  // Check if user is authenticated and fetch display name
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        console.log("AUTH CHECK - checking if user is authenticated",isAuthenticated)
+        // Get the current session
+        const { data: { session } } = await supabase.auth.getSession()
+        const currentUserId = session?.user?.id || null
+        
+        // Update authentication state and user ID
+        setIsAuthenticated(!!session)
+        setUserId(currentUserId)
+        
+        console.log("Auth check - User ID:", currentUserId, "Is authenticated:", !!session)
+        
+        // Fetch user display name if authenticated
+        if (currentUserId) {
+          const { data, error } = await supabase
+            .from('user_data_personal')
+            .select('display_name')
+            .eq('user_id', currentUserId)
+            .single()
+          
+          if (data && !error) {
+            const name = data.display_name || "User"
+            console.log("Found user display name:", name)
+            setUserDisplayName(name)
+            setRoutineName(`${name}'s Routine`)
+          } else {
+            console.error("Error fetching user display name:", error)
+            setRoutineName("My Custom Routine")
+          }
+        } else {
+          console.log("No user ID found, using guest title")
+          setRoutineName("Guest's Skin Routine")
+        }
+      } catch (err) {
+        console.error("Error in authentication check:", err)
+        setRoutineName("Guest's Skin Routine")
+      }
+    }
+    
+    checkAuth()
+  }, []) // Empty dependency array to run only on mount
+
+  const saveToProfile = async () => {
+    console.log("saveToProfile - userId",userId)
+    if (!userId || !isAuthenticated) {
+      console.log("User not authenticated")
+      return
+    }
+    
+    try {
+      setIsSaving(true)
+      
+      // Prepare the data to be saved - remove the id field to let Supabase generate it
+      const routineId = uuidv4();
+      const shareableId = generateShareableId(routineId);
+      const routineData = {
+        id: routineId,
+        shareable_id: shareableId,
+        owner_user_id: userId,
+        skin_type: skinType,
+        skin_concerns: skinConcerns,
+        climate: climate,
+        day_products: preferences.morningProducts,
+        night_products: preferences.nightProducts,
+        routine_name: routineName, // Use the editable routine name
+        routine_description: `A personalized routine for ${skinType.join(', ')} skin with focus on ${skinConcerns.join(', ')}.`,
+        comments: {},
+        likes_id: [],
+      }
+      
+      // Insert the data into the community_builds table
+      const { data, error } = await supabase
+        .from('community_builds')
+        .insert(routineData)
+        .select()
+      
+      if (error) {
+        console.error("Error saving routine:", error)
+        alert(`Error saving routine: ${error.message}`)
+        throw error
+      }
+      
+      console.log("Routine saved successfully:", data)
+      setIsSaved(true)
+      redirect(`/profile/${shareableId}`)
+    } catch (error) {
+      console.error("Failed to save routine:", error)
+    } finally {
+      setIsSaving(false)
+    }
+
+  }
+
   const handleNext = (data: any) => {
+    console.log("handlenext userId",userId)
     console.log("data before setFormData", data)
     console.log("test for skintype", data.skinType)
+    console.log("checking if user is authenticated2- userid:",userId)
 
     // Chain the state updates using callbacks
     const updateStates = () => {
@@ -100,10 +224,16 @@ export default function BuildPage() {
 
   // Update handleNextButtonClick to directly call handleNext with current step data
   const handleNextButtonClick = () => {
-    console.log('current state of data:', skinType)
-    console.log("current state of data-skinConcerns", skinConcerns)
-    console.log("current state of data-climate", climate)
-    console.log("current state of data-preferences", preferences)
+    console.log("userId",userId)
+    if (userId){
+      console.log("userId is not null, calling handleNext")
+      setIsAuthenticated(true)
+      setUserDisplayName(`${userDisplayName}'s Routine`)
+    }
+    // console.log('current state of data:', skinType)
+    // console.log("current state of data-skinConcerns", skinConcerns)
+    // console.log("current state of data-climate", climate)
+    // console.log("current state of data-preferences", preferences)
 
     const currentStepData = childDataRef.current?.getData?.()
     console.log("Step ID:", steps[currentStep].id)
@@ -147,48 +277,69 @@ export default function BuildPage() {
   if (isComplete) {
     return (
       <div className="min-h-screen flex flex-col bg-gradient-to-b from-pink-50 to-white">
-        <Header />
+        <Header onAuthChange={(id) => setUserId(id)} />
         <main className="flex-grow container mx-auto px-4 py-20">
           <h1 className="text-4xl font-bold text-center mb-8 text-pink-800">Your Personalized Skincare Routine</h1>
           <div className="max-w-2xl mx-auto">
-            <Card className="w-full bg-transparent border-none shadow-none">
+            <Card className="w-full bg-transparent border-2 shadow-md bg-white">
               <CardHeader className="bg-transparent">
-                <CardTitle>Your Skin Profile</CardTitle>
+                <div className="flex items-center justify-between">
+                  {isEditingTitle ? (
+                    <div className="flex items-center w-full">
+                      <input
+                        type="text"
+                        value={routineName}
+                        onChange={(e) => setRoutineName(e.target.value)}
+                        className="flex-grow mr-2 p-2 text-xl font-semibold border border-pink-300 rounded focus:outline-none focus:ring-2 focus:ring-pink-500"
+                        autoFocus
+                      />
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => setIsEditingTitle(false)}
+                        className="text-pink-500"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <CardTitle>{routineName}</CardTitle>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setIsEditingTitle(true)}
+                        className="text-pink-500"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                      </Button>
+                    </>
+                  )}
+                </div>
                 <CardDescription>Based on your responses</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6 bg-transparent">
-                <div>
-                  <h3 className="font-semibold mb-2">Skin Type</h3>
+              <SkincareRoutineBuildTemplate 
+                skinType={skinType} 
+                skinConcerns={skinConcerns} 
+                climate={climate} 
+                preferences={{morningProducts: preferences.morningProducts, nightProducts: preferences.nightProducts}} 
+                onRoutineChange={(morningProducts, nightProducts) => {
+                  // Only update state if the values have actually changed
+                  const morningChanged = JSON.stringify(morningProducts) !== JSON.stringify(preferences.morningProducts);
+                  const nightChanged = JSON.stringify(nightProducts) !== JSON.stringify(preferences.nightProducts);
                   
-                  <ul className="list-disc pl-5">
-                    {skinType.map((type: string) => (
-                      <li key={type}>{type}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-2">Skin Concerns</h3>
-                  <ul className="list-disc pl-5">
-                    {skinConcerns.map((concern: string) => (
-                      <li key={concern}>{concern}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-2">Climate</h3>
-                  <ul className="list-disc pl-5">
-                    {climate.map((climateItem: string) => (
-                      <li key={climateItem}>{climateItem}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-2">Current Routine</h3>
-                  <pre className="whitespace-pre-wrap">
-                    {JSON.stringify(preferences, null, 2)}
-                  </pre>
-                </div>
-              </CardContent>
+                  if (morningChanged || nightChanged) {
+                    setPreferences({
+                      morningProducts: morningProducts,
+                      nightProducts: nightProducts
+                    });
+                  }
+                }} />
               <CardFooter className="flex flex-col sm:flex-row gap-4 bg-transparent">
                 <Button 
                   onClick={() => {
@@ -213,9 +364,10 @@ export default function BuildPage() {
                   Start Over
                 </Button>
                 <Button
-                  onClick={() => {}}
-                  disabled={isSaving || isSaved}
+                  onClick={() => {saveToProfile()}}
+                  disabled={isSaving || isSaved || !isAuthenticated}
                   className="w-full sm:w-auto"
+                  title={!isAuthenticated ? "Sign in to save to profile" : ""}
                 >
                   {isSaving ? (
                     <span className="flex items-center gap-2">
@@ -244,6 +396,18 @@ export default function BuildPage() {
                   )}
                 </Button>
               </CardFooter>
+              {!isAuthenticated && (
+                <div className="text-center mt-4 text-sm text-gray-600">
+                  <p>Sign in to save your routine to your profile</p>
+                  <Button 
+                    variant="link" 
+                    className="text-pink-500 hover:text-pink-700"
+                    onClick={() => window.location.href = '/login'}
+                  >
+                    Sign in
+                  </Button>
+                </div>
+              )}
             </Card>
           </div>
         </main>
@@ -254,7 +418,7 @@ export default function BuildPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-pink-50 to-white">
-      <Header />
+      <Header onAuthChange={(id) => setUserId(id)} />
       <main className="flex-grow container mx-auto px-4 py-20">
         <h1 className="text-4xl font-bold text-center mb-8 text-pink-800">Build Your Perfect Skincare Routine</h1>
         <h2 className="text-s text-center mb-8 ">Answer a few questions about your skin and current routine, and we'll help you create a personalized skincare routine.</h2>
