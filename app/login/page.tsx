@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { login, signup } from '@/app/login/action'
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
@@ -11,8 +11,7 @@ import Header from "@/app/components/Header"
 import Footer from "@/app/components/Footer"
 import Link from "next/link"
 import { redirect } from 'next/navigation'
-
-import { createClient } from '@/utils/supabase/component'
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -20,7 +19,7 @@ const fadeInUp = {
 }
 
 async function CheckUser() {
-  const supabase = await createClient()
+  const supabase = createClientComponentClient()
 
   const { data, error } = await supabase.auth.getUser()
   if (error || !data?.user) {
@@ -29,31 +28,73 @@ async function CheckUser() {
 }
 
 export default function LoginPage() {
-  
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = createClientComponentClient()
 
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  // Check if user is already logged in
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        setIsLoading(true)
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        if (error) {
+          console.error("Auth error:", error)
+          // Clear any corrupted cookies
+          document.cookie = "supabase-auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+          setIsLoading(false)
+          return
+        }
+        
+        // If user is authenticated, redirect to dashboard
+        if (session) {
+          router.push('/dashboard')
+        } else {
+          setIsLoading(false)
+        }
+      } catch (err) {
+        console.error("Error checking auth:", err)
+        setIsLoading(false)
+      }
+    }
+    
+    checkAuth()
+  }, [router, supabase])
 
-  CheckUser()
-
-  const handleLogin = async (formData: FormData) => {
-    setIsLoading(true)
-    setError('')
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
     
     try {
-      const result = await login(formData)
-      if (result?.error) {
-        setError(result.error)
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (error) {
+        setError(error.message)
+        return
       }
+
+      router.push('/dashboard')
     } catch (err) {
-      setError('An unexpected error occurred')
-    } finally {
-      setIsLoading(false)
+      console.error(err)
+      setError("An unexpected error occurred")
     }
+  }
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-pink-50 to-white">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-pink-300 border-t-pink-600"></div>
+        <p className="mt-4 text-pink-800">Loading...</p>
+      </div>
+    )
   }
 
   return (
@@ -62,15 +103,15 @@ export default function LoginPage() {
         <Header />
       </div>
       <main className="flex-grow flex items-center justify-center relative">
-        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat z-20" 
-          style={{ 
+        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat z-20"
+          style={{
             backgroundImage: 'url("/background-temp.png")',
             backgroundSize: '100%',
             filter: 'brightness(0.7)'
-          }} 
+          }}
         />
         <div className="absolute inset-0 bg-black/30" />
-        
+
         <div className="container relative mx-auto px-4 z-30 flex-col flex">
           <div className="max-w-md mx-auto">
             <Card className="backdrop-blur-md bg-white/90">
@@ -80,7 +121,7 @@ export default function LoginPage() {
                   Enter your details to sign into your account
                 </CardDescription>
               </CardHeader>
-              <form action={handleLogin}>
+              <form onSubmit={handleLogin}>
                 <CardContent className="space-y-4">
                   <div>
                     <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -110,7 +151,7 @@ export default function LoginPage() {
                       className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
                     />
                   </div>
-                  
+
                   {error && (
                     <div className="text-red-500 text-sm font-medium p-2 bg-red-50 rounded-md">
                       {error}

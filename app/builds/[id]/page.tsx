@@ -3,23 +3,34 @@ import { notFound } from 'next/navigation'
 import Header from '@/app/components/Header'
 import Footer from '@/app/components/Footer'
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar"
-import { Button } from "../../components/ui/button"
-import { Heart, MessageCircle, Share2 } from 'lucide-react'
 import RoutineToggle from '../../components/RoutineToggle'
+import ShareButton from '../../components/ShareButton'
+import LikeButton from '../../components/LikeButton'
 
+// This is a server component (no 'use client' directive)
 export default async function RoutineDetail({ params }: { params: { id: string } }) {
   const supabase = createClient()
   
   const { data: routine, error } = await supabase
     .from('community_builds')
     .select()
-    .eq('id', params.id)
+    .eq('shareable_id', params.id)
     .single()
 
   if (error || !routine) {
     return notFound()
   }
 
+  // Fetch user data to get the avatar URL
+  const { data: userData } = await supabase
+    .from('user_data_personal')
+    .select('avatar_url')
+    .eq('id', routine.owner_user_id)
+    .single()
+
+  // Use the avatar URL from user_data_personal if available, otherwise fallback to routine.avatar_url
+  const avatarUrl = userData?.avatar_url || routine.avatar_url
+  
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -30,7 +41,7 @@ export default async function RoutineDetail({ params }: { params: { id: string }
             {/* User Info */}
             <div className="flex items-center gap-4 mb-8">
               <Avatar className="h-16 w-16">
-                <AvatarImage src={routine.avatar_url} />
+                <AvatarImage src={avatarUrl} />
                 <AvatarFallback>{routine.user_name}</AvatarFallback>
               </Avatar>
               <div>
@@ -56,10 +67,17 @@ export default async function RoutineDetail({ params }: { params: { id: string }
 
             {/* Routines */}
             <div className="mb-8">
-              <RoutineToggle 
-                dayProducts={routine.day_products}
-                nightProducts={routine.night_products}
-              />
+              {(!routine.day_products || routine.day_products.length === 0) && 
+               (!routine.night_products || routine.night_products.length === 0) ? (
+                <div className="p-4 bg-gray-50 rounded-lg text-center">
+                  <p className="text-gray-600">No products have been added to this routine yet.</p>
+                </div>
+              ) : (
+                <RoutineToggle 
+                  dayProducts={routine.day_products || []}
+                  nightProducts={routine.night_products || []}
+                />
+              )}
             </div>
 
             {/* Description */}
@@ -70,14 +88,12 @@ export default async function RoutineDetail({ params }: { params: { id: string }
 
             {/* Interaction Buttons */}
             <div className="flex items-center gap-4 pt-4 border-t">
-              <Button variant="ghost" size="lg" className="flex-1 hover:text-red-500 transition-colors">
-                <Heart className="h-5 w-5 mr-2" />
-                {routine.likes} Likes
-              </Button>
-              <Button variant="ghost" size="lg" className="flex-1 hover:text-green-500 transition-colors">
-                <Share2 className="h-5 w-5 mr-2" />
-                Share
-              </Button>
+              <LikeButton 
+                buildId={params.id} 
+                initialLikes={routine.likes_id || []} 
+                likesCount={routine.likes || 0} 
+              />
+              <ShareButton shareableId={params.id} />
             </div>
           </div>
 
@@ -85,7 +101,7 @@ export default async function RoutineDetail({ params }: { params: { id: string }
           <div className="col-span-1 bg-white rounded-lg p-8">
             <h2 className="text-lg font-semibold mb-4">Comments</h2>
             <div className="space-y-4">
-              {Object.values(routine.comments).flat().map((comment: string, index: number) => (
+              {Object.values(routine.comments || {}).flat().map((comment: string, index: number) => (
                 <div key={index} className="bg-gray-50 p-4 rounded-lg">
                   <p className="text-gray-600">{comment}</p>
                 </div>
@@ -97,4 +113,4 @@ export default async function RoutineDetail({ params }: { params: { id: string }
       <Footer />
     </div>
   )
-} 
+}

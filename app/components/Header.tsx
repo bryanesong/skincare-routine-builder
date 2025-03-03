@@ -5,134 +5,103 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Button } from "../components/ui/button"
 import { Menu, User, Settings, LogOut } from 'lucide-react'
-import { User as SupabaseUser } from '@supabase/supabase-js'
 import { createClient } from '@/utils/supabase/component'
+import { useUser } from '../context/user-provider'
 
-export default function Header() {
+interface HeaderProps {
+  onAuthChange?: (userId: string | null) => void;
+}
+
+export default function Header({ onAuthChange }: HeaderProps = {}) {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
-  const [user, setUser] = useState<SupabaseUser | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [userProfilePhoto, setUserProfilePhoto] = useState<string | null>(null)
+  const [profileLoaded, setProfileLoaded] = useState(false)
 
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
+  
+  // Use the user context instead of local state
+  const { user, isLoading } = useUser()
 
+  // Notify parent component about auth changes (only when user changes)
   useEffect(() => {
-    console.log('Auth effect running')
+    if (onAuthChange) {
+      onAuthChange(user?.id || null)
+    }
+  }, [user, onAuthChange])
 
-    const getUser = async () => {
-      console.log('Header Getting user...')
+  // Fetch user profile photo only once when user is available and profile hasn't been loaded
+  useEffect(() => {
+    if (!user || profileLoaded) return;
+
+    const fetchUserProfile = async () => {
       try {
-        const { data: { user }, error } = await supabase.auth.getUser()
-        if (error) {
-          console.error('Header Error fetching user:', error)
-          return
-        }
-        console.log('Header Fetched user:', user)
-        setUser(user)
-        if (!user) {
-          console.error('User not found')
-          return
-        }
-        const { data, error: profileError } = await supabase
+        const { data, error } = await supabase
           .from('user_data_personal')
           .select('avatar_url')
           .eq('id', user.id)
           .single()
 
-        if (profileError) {
-          console.error('Error fetching profile photo:', profileError)
-          return
+        if (error) {
+          console.error('Error fetching profile photo:', error)
         } else {
-          console.log('Setting initial avatar_url:', data?.avatar_url)
           setUserProfilePhoto(data?.avatar_url ?? null)
         }
-
-      } catch (error) {
-        console.error('Header Exception fetching user:', error)
-      } finally {
-        setIsLoading(false)
+        
+        // Mark profile as loaded to prevent additional fetches
+        setProfileLoaded(true)
+      } catch (profileException) {
+        console.error('Exception fetching profile data:', profileException)
+        setProfileLoaded(true) // Still mark as loaded to prevent retry loops
       }
     }
 
-    getUser()
+    fetchUserProfile()
+  }, [user, supabase, profileLoaded])
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, session)
-      setUser(session?.user ?? null)
-      if (!session?.user) {
-        setUserProfilePhoto(null)
-      }
-      setIsLoading(false)
-    })
-
-    return () => {
-    }
-  }, [supabase])
-
-  // Separate useEffect for realtime subscription to ensure it runs when user changes
+  // Set up realtime subscription for profile changes - only once per user session
   useEffect(() => {
-    if (!user) return
-    
-    console.log('Setting up realtime subscription for user:', user.id)
-    
+    if (!user) return;
+
     // Create a unique channel name
-    const channelName = `profile-changes-${user.id}-${Date.now()}`
-    
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: '*', // Listen for all events (INSERT, UPDATE, DELETE)
-          schema: 'public',
-          table: 'user_data_personal',
-          filter: `id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('Realtime update received:', payload)
-          console.log('real time data avatar_url received:', payload.new['avatar_url'])
-          // Directly update from payload for immediate feedback
-          setUserProfilePhoto(payload.new['avatar_url'])
-        }
-      )
-      .subscribe((status) => {
-        console.log(`Realtime subscription status for ${user.id}:`, status)
-        if (status !== 'SUBSCRIBED') {
-          console.error('Failed to subscribe to realtime updates')
-        }
-      })
+    const channelName = `profile-changes-${user.id}`
 
-    // Fetch the current avatar_url to ensure we have the latest
-    const fetchCurrentAvatar = async () => {
-      const { data, error } = await supabase
-        .from('user_data_personal')
-        .select('avatar_url')
-        .eq('id', user.id)
-        .single()
+    let channel;
 
-      if (error) {
-        console.error('Error fetching current avatar:', error)
-        return
-      }
-
-      if (data && data.avatar_url !== userProfilePhoto) {
-        console.log('Updated avatar from fetch:', data.avatar_url)
-        setUserProfilePhoto(data.avatar_url)
-      }
+    try {
+      channel = supabase
+        .channel(channelName)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'user_data_personal',
+            filter: `id=eq.${user.id}`
+          },
+          (payload) => {
+            // Only update if the avatar_url has changed
+            if (payload.new['avatar_url'] !== userProfilePhoto) {
+              setUserProfilePhoto(payload.new['avatar_url'])
+            }
+          }
+        )
+        .subscribe()
+    } catch (channelError) {
+      console.error('Error setting up realtime channel:', channelError)
     }
-
-    fetchCurrentAvatar()
 
     return () => {
-      console.log('Cleaning up realtime subscription for:', channelName)
-      supabase.removeChannel(channel)
+      if (channel) {
+        supabase.removeChannel(channel)
+      }
     }
-  }, [user, supabase]) // Remove userProfilePhoto dependency to prevent re-subscriptions
+  }, [user, supabase]) // Removed userProfilePhoto dependency to prevent re-subscriptions
 
+  // Handle scroll events
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10)
@@ -196,7 +165,7 @@ export default function Header() {
                 >
                   {userProfilePhoto ? (
                     <img
-                      src={userProfilePhoto ?? undefined}
+                      src={userProfilePhoto}
                       alt={user.user_metadata?.full_name || user.email}
                       className="w-8 h-8 rounded-full object-cover"
                     />
@@ -236,6 +205,16 @@ export default function Header() {
       {isMobileMenuOpen && (
         <div className="md:hidden bg-white border-t animate-fade-in">
           <nav className="container mx-auto px-4 py-4 flex flex-col gap-4">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`text-sm font-medium transition-colors hover:text-primary ${pathname === item.href ? 'text-primary' : 'text-gray-600'}`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {item.label}
+              </Link>
+            ))}
             {isLoading ? (
               <div className="w-full h-8 animate-pulse bg-gray-200 rounded" />
             ) : !user ? (
