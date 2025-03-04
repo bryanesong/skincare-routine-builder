@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion, useAnimation } from 'framer-motion'
@@ -10,6 +10,7 @@ import { ArrowRight, Star, Shield, Sparkles, Users, Search } from 'lucide-react'
 import Header from './components/Header'
 import Footer from './components/Footer'
 import BuildPage from "./build/page"
+import { createClient } from '@supabase/supabase-js'
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -43,6 +44,31 @@ function AnimatedSection({ children }: { children: React.ReactNode }) {
 }
 
 export default function Home() {
+  const [userCount, setUserCount] = useState<number | null>(null)
+  
+  useEffect(() => {
+    async function fetchUserCount() {
+      // Initialize Supabase client
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+      const supabase = createClient(supabaseUrl, supabaseKey)
+      
+      // Fetch count of rows from the user_data_personal table
+      const { count, error } = await supabase
+        .from('user_data_personal')
+        .select('*', { count: 'exact', head: true })
+      
+      if (error) {
+        console.error('Error fetching user count:', error)
+        return
+      }
+      
+      setUserCount(count)
+    }
+    
+    fetchUserCount()
+  }, [])
+  
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -78,7 +104,7 @@ export default function Home() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4 text-gray-400" />
-                      <span>10k+ users</span>
+                      <span>{userCount ? `${userCount.toLocaleString()} users` : 'Loading number of users...'}</span>
                     </div>
                   </motion.div>
                 </motion.div>

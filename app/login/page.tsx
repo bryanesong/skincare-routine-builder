@@ -12,6 +12,7 @@ import Footer from "@/app/components/Footer"
 import Link from "next/link"
 import { redirect } from 'next/navigation'
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { createClient } from '@/utils/supabase/component'
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -32,43 +33,27 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [oauthLoading, setOauthLoading] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
   const router = useRouter()
-  const supabase = createClientComponentClient()
 
-  // Check if user is already logged in
-  useEffect(() => {
-    async function checkAuth() {
-      try {
-        setIsLoading(true)
-        const { data: { session }, error } = await supabase.auth.getSession()
-        
-        if (error) {
-          console.error("Auth error:", error)
-          // Clear any corrupted cookies
-          document.cookie = "supabase-auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
-          setIsLoading(false)
-          return
-        }
-        
-        // If user is authenticated, redirect to dashboard
-        if (session) {
-          router.push('/dashboard')
-        } else {
-          setIsLoading(false)
-        }
-      } catch (err) {
-        console.error("Error checking auth:", err)
-        setIsLoading(false)
-      }
+  // Correct initialization of Supabase client
+  const supabase = createClient()
+
+  // Handle auth status change from Header component
+  const handleAuthChange = (userId: string | null) => {
+    setIsLoggedIn(!!userId)
+    setIsLoading(false)
+
+    // Optional: Redirect if already logged in
+    if (userId) {
+      router.push('/dashboard')
     }
-    
-    checkAuth()
-  }, [router, supabase])
+  }
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault() // Prevent default form submission behavior
+
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -80,27 +65,38 @@ export default function LoginPage() {
         return
       }
 
+      // Successful login
       router.push('/dashboard')
     } catch (err) {
-      console.error(err)
-      setError("An unexpected error occurred")
+      console.error('Login error:', err)
+      setError('An unexpected error occurred')
     }
   }
 
-  // Show loading state while checking authentication
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-pink-50 to-white">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-pink-300 border-t-pink-600"></div>
-        <p className="mt-4 text-pink-800">Loading...</p>
-      </div>
-    )
+  const handleOAuthLogin = async (provider: 'google' | 'github' | 'facebook') => {
+    try {
+      setOauthLoading(true)
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
+      if (error) {
+        setError(error.message)
+      }
+    } catch (err) {
+      console.error('OAuth login error:', err)
+      setError('An unexpected error occurred during OAuth login')
+    } finally {
+      setOauthLoading(false)
+    }
   }
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-pink-50 to-white z-10">
       <div className="p-9">
-        <Header />
+        <Header onAuthChange={handleAuthChange} />
       </div>
       <main className="flex-grow flex items-center justify-center relative">
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat z-20"
@@ -112,76 +108,102 @@ export default function LoginPage() {
         />
         <div className="absolute inset-0 bg-black/30" />
 
-        <div className="container relative mx-auto px-4 z-30 flex-col flex">
-          <div className="max-w-md mx-auto">
-            <Card className="backdrop-blur-md bg-white/90">
-              <CardHeader>
+        <div className="container relative mx-auto px-4 z-30">
+          <div className="max-w-xl mx-auto flex-1">
+            <Card className="space-y-4 backdrop-blur-md bg-white/90 shadow-md bg-white">
+              <CardHeader className="">
                 <CardTitle className="text-center">Welcome Back</CardTitle>
                 <CardDescription className="text-gray-500 text-center">
                   Enter your details to sign into your account
                 </CardDescription>
               </CardHeader>
-              <form onSubmit={handleLogin}>
-                <CardContent className="space-y-4">
+              <CardContent>
+                {/* Social login buttons */}
+                <div className="mb-10">
+                  <div className="flex gap-4">
+                    <button
+                      onClick={() => handleOAuthLogin('google')}
+                      disabled={oauthLoading}
+                      className="flex-1 flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-md py-2.5 px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                    >
+                      <img
+                        src="https://www.google.com/images/branding/googleg/1x/googleg_standard_color_128dp.png"
+                        alt="Google logo"
+                        className="h-5 w-5"
+                      />
+                      <span>Continue with Google</span>
+                    </button>
+
+                    {/* <button
+                    onClick={() => handleOAuthLogin('facebook')}
+                    disabled={oauthLoading}
+                    className="flex-1 flex items-center justify-center gap-2 bg-[#1877F2] rounded-md py-2.5 px-4 text-sm font-medium text-white hover:bg-[#166FE5] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1877F2] transition-colors"
+                  >
+                    <img 
+                      src="https://static.xx.fbcdn.net/rsrc.php/yD/r/d4ZIVX-5C-b.ico" 
+                      alt="Facebook logo" 
+                      className="h-5 w-5" 
+                    />
+                    <span>Continue with Facebook</span>
+                  </button> */}
+                  </div>
+                </div>
+
+                {/* Divider */}
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white px-2 text-gray-500">Or continue with</span>
+                  </div>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {error && (
+                    <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">
+                      {error}
+                    </div>
+                  )}
+
                   <div>
                     <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                       Email
                     </label>
                     <input
                       id="email"
-                      name="email"
                       type="email"
-                      required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
+                      required
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                     />
                   </div>
+
                   <div>
                     <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                       Password
                     </label>
                     <input
                       id="password"
-                      name="password"
                       type="password"
-                      required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
+                      required
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                     />
                   </div>
 
-                  {error && (
-                    <div className="text-red-500 text-sm font-medium p-2 bg-red-50 rounded-md">
-                      {error}
-                    </div>
-                  )}
-                </CardContent>
-
-                <CardFooter className="flex flex-col gap-4">
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <span className="flex items-center gap-2">
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                        Logging in...
-                      </span>
-                    ) : (
-                      "Log In"
-                    )}
-                  </Button>
-                  <div className="text-sm text-center w-full">
-                    Don't have an account?{' '}
-                    <Link href="/signup" className="font-medium text-primary hover:text-primary/80">
-                      Sign Up
-                    </Link>
+                  <div>
+                    <Button
+                      type="submit"
+                      className="w-full"
+                    >
+                      Sign in
+                    </Button>
                   </div>
-                </CardFooter>
-              </form>
+                </form>
+              </CardContent>
             </Card>
           </div>
         </div>
