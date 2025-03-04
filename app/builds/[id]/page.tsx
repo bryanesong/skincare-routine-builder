@@ -24,12 +24,13 @@ export default async function RoutineDetail({ params }: { params: { id: string }
   // Fetch user data to get the avatar URL
   const { data: userData } = await supabase
     .from('user_data_personal')
-    .select('avatar_url')
+    .select('avatar_url, display_name')
     .eq('id', routine.owner_user_id)
     .single()
 
   // Use the avatar URL from user_data_personal if available, otherwise fallback to routine.avatar_url
   const avatarUrl = userData?.avatar_url || routine.avatar_url
+  const userDisplayName = userData?.display_name || routine.user_name
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -45,7 +46,7 @@ export default async function RoutineDetail({ params }: { params: { id: string }
                 <AvatarFallback>{routine.user_name}</AvatarFallback>
               </Avatar>
               <div>
-                <h1 className="text-2xl font-bold">{routine.user_name}</h1>
+                <h1 className="text-2xl font-bold">{userDisplayName}</h1>
                 <p className="text-lg text-gray-600">{routine.routine_name}</p>
               </div>
             </div>
