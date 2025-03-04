@@ -2,6 +2,7 @@ import Image from 'next/image'
 import { Button } from "../components/ui/button"
 import Header from '../components/Header'
 import Footer from '../components/Footer'
+import Link from "next/link"
 
 export default function About() {
   return (
@@ -25,16 +26,18 @@ export default function About() {
               <div className="animate-fade-in">
                 <h2 className="text-3xl font-bold mb-4">Our Story</h2>
                 <p className="text-gray-600 mb-4">
-                BuildMySkincare was born out of frustration with the overwhelming world of skincare products. Our founders, all skincare enthusiasts, realized that finding the right products and building an effective routine was far too complicated.
+                BuildMySkincare was born out of frustration with the overwhelming world of skincare products and reading large unordered lists of texts containing skincare routines. We realized that finding the right products and building an effective routine was far too complicated.
                 </p>
                 <p className="text-gray-600 mb-4">
-                  We set out to create a platform that would make it easy for anyone to build a personalized skincare routine, regardless of their skin type or concerns. By combining expert knowledge with user data and advanced algorithms, we've created a tool that takes the guesswork out of skincare.
+                  We set out to create a sharing platform that would make it easy for anyone to build and share any type of skincare routine with just a single URL.
                 </p>
-                <Button>Learn More About Our Technology</Button>
+                <Link href="/builds">
+                  <Button>View Community Skincare Routines</Button>
+                </Link>
               </div>
               <div className="relative h-[400px] animate-fade-in">
                 <Image
-                  src="/placeholder.svg?height=400&width=600"
+                  src="/temp_images/IMG_9117.jpg"
                   alt="BuildMySkincare team"
                   fill
                   className="object-cover rounded-lg shadow-lg"
@@ -50,8 +53,8 @@ export default function About() {
             <div className="grid md:grid-cols-3 gap-8">
               {[
                 { icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z", title: "Simplicity", description: "We believe skincare should be simple and accessible to everyone." },
-                { icon: "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z", title: "Science-Backed", description: "Our recommendations are based on scientific research and expert knowledge." },
-                { icon: "M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4", title: "Personalization", description: "We understand that everyone's skin is unique and provide tailored solutions." },
+                { icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z", title: "Community Built", description: "Skincare routines are created by the community, for the community." },
+                { icon: "M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4", title: "Personalization", description: "We understand that everyone's skin is unique and provide specific filters for all skin types." },
               ].map((value, index) => (
                 <div key={index} className="text-center animate-fade-in">
                   <div className="bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
