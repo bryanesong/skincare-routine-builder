@@ -38,16 +38,23 @@ type SkinRoutine = {
   likes_id: string[];
   shareable_id: string;
   routine_name: string;
-  day_products: {
-    product_name: string[];
-    product_id: string[];
-  };
-  night_products: {
-    product_name: string[];
-    product_id: string[];
-  };
+  day_products: Array<{
+    id: number;
+    name: string;
+    type: string;
+    routine: string;
+    imageUrl: string;
+  }>;
+  night_products: Array<{
+    id: number;
+    name: string;
+    type: string;
+    routine: string;
+    imageUrl: string;
+  }>;
   routine_description: string;
   comments: Comments;
+  owner_user_id: string;
   display_name?: string;
   avatar_url?: string;
   user_id?: string;
@@ -176,6 +183,7 @@ export default function CommunityBuilds() {
 
         setRoutines(routinesWithUserData);
         setFilteredRoutines(routinesWithUserData);
+        console.log('routinesWithUserData', routinesWithUserData)
       } catch (err) {
         console.error('Error fetching routines:', err);
         setError('Failed to load routines');
@@ -420,19 +428,19 @@ export default function CommunityBuilds() {
                       <div className="bg-white rounded-lg h-[110px] flex flex-col">
                         <h4 className="text-sm font-semibold text-indigo-600 mb-2">Morning Routine</h4>
                         <div className="relative flex-1">
-                          {routine.day_products?.product_name?.length > 0 ? (
-                            <ul className={`space-y-2 ${routine.day_products.product_name.length > 3 ? 'max-h-[88px] overflow-hidden' : ''}`}>
-                              {routine.day_products.product_name.map((productName, index) => (
-                                <li key={routine.day_products.product_id[index]} className="text-sm flex items-center gap-2">
+                          {routine.day_products?.length > 0 ? (
+                            <ul className={`space-y-2 ${routine.day_products.length > 3 ? 'max-h-[88px] overflow-hidden' : ''}`}>
+                              {routine.day_products.map((product, index) => (
+                                <li key={product.id} className="text-sm flex items-center gap-2">
                                   <span className="w-2 h-2 bg-yellow-500 rounded-full" />
-                                  {productName}
+                                  {product.name}
                                 </li>
                               ))}
                             </ul>
                           ) : (
                             <p className="text-sm text-gray-500 italic">No morning products selected</p>
                           )}
-                          {routine.day_products?.product_name?.length > 3 && (
+                          {routine.day_products?.length > 3 && (
                             <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent" />
                           )}
                         </div>
@@ -441,19 +449,19 @@ export default function CommunityBuilds() {
                       <div className="bg-white rounded-lg h-[110px] flex flex-col">
                         <h4 className="text-sm font-semibold text-indigo-600 mb-2">Evening Routine</h4>
                         <div className="relative flex-1">
-                          {routine.night_products?.product_name?.length > 0 ? (
-                            <ul className={`space-y-2 ${routine.night_products.product_name.length > 3 ? 'max-h-[88px] overflow-hidden' : ''}`}>
-                              {routine.night_products.product_name.map((productName, index) => (
-                                <li key={routine.night_products.product_id[index]} className="text-sm flex items-center gap-2">
+                          {routine.night_products?.length > 0 ? (
+                            <ul className={`space-y-2 ${routine.night_products.length > 3 ? 'max-h-[88px] overflow-hidden' : ''}`}>
+                              {routine.night_products.map((product, index) => (
+                                <li key={product.id} className="text-sm flex items-center gap-2">
                                   <span className="w-2 h-2 bg-indigo-500 rounded-full" />
-                                  {productName}
+                                  {product.name}
                                 </li>
                               ))}
                             </ul>
                           ) : (
                             <p className="text-sm text-gray-500 italic">No evening products selected</p>
                           )}
-                          {routine.night_products?.product_name?.length > 3 && (
+                          {routine.night_products?.length > 3 && (
                             <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent" />
                           )}
                         </div>

@@ -137,7 +137,7 @@ export default function BuildPage() {
   }, []) // Empty dependency array to run only on mount
 
   const saveToProfile = async () => {
-    console.log("saveToProfile - userId",userId)
+    console.log("saveToProfile - userId",userId,'routine name:',routineName)
     if (!userId || !isAuthenticated) {
       console.log("User not authenticated")
       return
@@ -178,7 +178,7 @@ export default function BuildPage() {
       
       console.log("Routine saved successfully:", data)
       setIsSaved(true)
-      redirect(`/profile/${shareableId}`)
+      redirect(`/builds/${shareableId}`)
     } catch (error) {
       console.error("Failed to save routine:", error)
     } finally {

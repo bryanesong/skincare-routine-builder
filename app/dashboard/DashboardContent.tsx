@@ -9,11 +9,47 @@ import ProfilePhotoSelector from '@/app/components/ProfilePhotoSelector'
 import { PencilIcon, XIcon } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 
+type SkinRoutine = {
+    id: number;
+    skin_type: string[];
+    skin_concerns: string[];
+    climate: string[];
+    likes_id: string[];
+    shareable_id: string;
+    routine_name: string;
+    day_products: Array<{
+      id: number;
+      name: string;
+      type: string;
+      routine: string;
+      imageUrl: string;
+    }>;
+    night_products: Array<{
+      id: number;
+      name: string;
+      type: string;
+      routine: string;
+      imageUrl: string;
+    }>;
+    routine_description: string;
+    comments: Comments;
+    owner_user_id: string;
+    display_name?: string;
+    avatar_url?: string;
+    user_id?: string;
+  };
+
+  type Comments = {
+    [userId: string]: string[];
+  };
+
 export default function DashboardContent({ userData }) {
     const [isLoading, setIsLoading] = useState(true)
     const [isEditingName, setIsEditingName] = useState(false)
     const [displayName, setDisplayName] = useState(userData.display_name)
     const [newDisplayName, setNewDisplayName] = useState(userData.display_name)
+    const [userRoutines, setUserRoutines] = useState<SkinRoutine[]>([])
+    const [routinesLoading, setRoutinesLoading] = useState(true)
     const supabase = createClient()
     
     useEffect(() => {
@@ -23,6 +59,28 @@ export default function DashboardContent({ userData }) {
         
         return () => clearTimeout(timer)
     }, [])
+
+    useEffect(() => {
+        const fetchUserRoutines = async () => {
+            setRoutinesLoading(true)
+            const { data, error } = await supabase
+                .from('community_builds')
+                .select('*')
+                .eq('owner_user_id', userData.id)
+                .order('created_at', { ascending: false })
+            
+            if (error) {
+                console.error('Error fetching user routines:', error)
+            } else {
+                setUserRoutines(data as SkinRoutine[])
+            }
+            setRoutinesLoading(false)
+        }
+
+        if (userData?.id) {
+            fetchUserRoutines()
+        }
+    }, [userData.id, supabase])
 
     const handleEditName = () => {
         setIsEditingName(true)
@@ -72,6 +130,26 @@ export default function DashboardContent({ userData }) {
                     <div className="grid md:grid-cols-2 gap-6">
                         <div className="bg-white rounded-lg shadow p-6">
                             <h2 className="text-xl font-semibold mb-4">Your Skincare Routines</h2>
+                            {routinesLoading ? (
+                                <div className="flex justify-center py-4">
+                                    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                </div>
+                            ) : userRoutines.length > 0 ? (
+                                <div className="space-y-3 mb-4">
+                                    {userRoutines.map((routine: any) => (
+                                        <div key={routine.id} className="border rounded-md p-3 hover:bg-gray-50">
+                                            <Link href={`/builds/${routine.shareable_id}`} className="block">
+                                                <h3 className="font-medium">{routine.routine_name || 'Unnamed Routine'}</h3>
+                                                <p className="text-sm text-gray-500">
+                                                    {new Date(routine.created_at).toLocaleDateString()}
+                                                </p>
+                                            </Link>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-gray-500 mb-4">You haven't created any routines yet.</p>
+                            )}
                             <Button asChild>
                                 <Link href="/build">Create New Routine</Link>
                             </Button>
@@ -130,22 +208,20 @@ export default function DashboardContent({ userData }) {
 
     return (
         <>
-            {/* Hidden dashboard content that pre-loads while loading screen is shown */}
-            <div className={isLoading ? "hidden" : ""}>
-                {dashboardContent}
-            </div>
+            {/* Show dashboard content when not loading */}
+            {!isLoading && dashboardContent}
 
             {/* Loading screen */}
             {isLoading && (
                 <div className="min-h-screen flex flex-col">
-                <Header />
-                <div className="mx-auto py-6"></div>
-                <div className="min-h-screen flex flex-col items-center justify-center">
-                    <div className="flex flex-col items-center space-y-4">
-                        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                        <p className="text-lg font-medium">Loading your dashboard...</p>
+                    <Header />
+                    <div className="flex-grow flex items-center justify-center">
+                        <div className="flex flex-col items-center space-y-4">
+                            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                            <p className="text-lg font-medium">Loading your dashboard...</p>
                         </div>
                     </div>
+                    <Footer />
                 </div>
             )}
         </>

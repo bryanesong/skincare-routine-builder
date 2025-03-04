@@ -9,8 +9,20 @@ interface Product {
 }
 
 interface RoutineToggleProps {
-  dayProducts: Product
-  nightProducts: Product
+  dayProducts: Array<{
+    id: number;
+    name: string;  // This is an array of strings, not product_name
+    type: string;
+    routine: string;
+    imageUrl: string;
+  }>;
+  nightProducts: Array<{
+    id: number;
+    name: string;  // This is an array of strings, not product_name
+    type: string;
+    routine: string;
+    imageUrl: string;
+  }>;
 }
 
 export default function RoutineToggle({ dayProducts, nightProducts }: RoutineToggleProps) {
@@ -57,15 +69,17 @@ export default function RoutineToggle({ dayProducts, nightProducts }: RoutineTog
             <div className="space-y-4">
               <h2 className="text-xl font-semibold text-indigo-600">Morning Routine</h2>
               <ul className="space-y-3">
-                {dayProducts.product_name.map((productName: string, index: number) => (
-                  <li key={dayProducts.product_id[index]} className="flex items-center gap-3 p-3 border rounded-lg shadow-sm">
+                {dayProducts.map((product, index) => (
+                  <li key={index} className="flex items-center gap-3 p-3 border rounded-lg shadow-sm">
                     <span className="font-medium text-gray-500 min-w-[1.5rem]">{index + 1}.</span>
-                    <img 
-                      src={dayProducts.product_image?.[index] || 'https://static.vecteezy.com/system/resources/thumbnails/030/607/510/small/cosmetic-rounded-all-white-soap-bottle-mockup-on-white-table-ai-generative-free-photo.jpg'} 
-                      alt={productName}
-                      className="w-12 h-12 object-cover rounded-lg bg-gray-100"
-                    />
-                    <span className="text-lg truncate flex-1">{productName}</span>
+                    {product.imageUrl && (
+                      <img 
+                        src={product.imageUrl} 
+                        alt={product.name[0] || 'Product'}
+                        className="w-12 h-12 object-cover rounded-lg bg-gray-100"
+                      />
+                    )}
+                    <span className="text-lg truncate flex-1">{product.name}</span>
                   </li>
                 ))}
               </ul>
@@ -77,15 +91,17 @@ export default function RoutineToggle({ dayProducts, nightProducts }: RoutineTog
             <div className="space-y-4">
               <h2 className="text-xl font-semibold text-indigo-600">Evening Routine</h2>
               <ul className="space-y-3">
-                {nightProducts.product_name.map((productName: string, index: number) => (
-                  <li key={nightProducts.product_id[index]} className="flex items-center gap-3 p-3 border rounded-lg shadow-sm">
+                {nightProducts.map((product, index) => (
+                  <li key={index} className="flex items-center gap-3 p-3 border rounded-lg shadow-sm">
                     <span className="font-medium text-gray-500 min-w-[1.5rem]">{index + 1}.</span>
-                    <img 
-                      src={nightProducts.product_image?.[index] || 'https://static.vecteezy.com/system/resources/thumbnails/030/607/510/small/cosmetic-rounded-all-white-soap-bottle-mockup-on-white-table-ai-generative-free-photo.jpg'} 
-                      alt={productName}
-                      className="w-12 h-12 object-cover rounded-lg bg-gray-100"
-                    />
-                    <span className="text-lg truncate flex-1">{productName}</span>
+                    {product.imageUrl && (
+                      <img 
+                        src={product.imageUrl} 
+                        alt={product.name[0] || 'Product'}
+                        className="w-12 h-12 object-cover rounded-lg bg-gray-100"
+                      />
+                    )}
+                    <span className="text-lg truncate flex-1">{product.name}</span>
                   </li>
                 ))}
               </ul>
