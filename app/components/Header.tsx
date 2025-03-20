@@ -22,9 +22,18 @@ export default function Header({ onAuthChange }: HeaderProps = {}) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
-  
+
   // Use the user context instead of local state
   const { user, isLoading } = useUser()
+
+  // Add debug logging
+  useEffect(() => {
+    console.log('Header Auth State:', {
+      user,
+      isLoading,
+      cookies: document.cookie // Check if auth cookie exists
+    })
+  }, [user, isLoading])
 
   // Notify parent component about auth changes (only when user changes)
   useEffect(() => {
@@ -50,7 +59,7 @@ export default function Header({ onAuthChange }: HeaderProps = {}) {
         } else {
           setUserProfilePhoto(data?.avatar_url ?? null)
         }
-        
+
         // Mark profile as loaded to prevent additional fetches
         setProfileLoaded(true)
       } catch (profileException) {
@@ -125,7 +134,7 @@ export default function Header({ onAuthChange }: HeaderProps = {}) {
       console.error('Error signing out:', error)
     }
   }
-
+  console.log('user', user)
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white/90 backdrop-blur-md shadow-md' : 'bg-transparent'}`}>
       <div className="container mx-auto px-4">

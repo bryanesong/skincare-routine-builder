@@ -67,38 +67,7 @@ export default function ProductList() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <ProductCard
-          name="Gentle Foaming Cleanser"
-          brand="SkinCare Co"
-          price={24.99}
-          rating={4.5}
-          reviews={128}
-          image="/placeholder.svg?height=200&width=200"
-          category="Cleanser"
-          skinType={["Normal", "Sensitive"]}
-        />
-        <ProductCard
-          name="Hydrating Toner"
-          brand="Pure Beauty"
-          price={19.99}
-          rating={4.2}
-          reviews={85}
-          image="/placeholder.svg?height=200&width=200"
-          category="Toner"
-          skinType={["Dry", "Normal"]}
-        />
-        <ProductCard
-          name="Vitamin C Serum"
-          brand="Glow Labs"
-          price={45.99}
-          rating={4.8}
-          reviews={256}
-          image="/placeholder.svg?height=200&width=200"
-          category="Serum"
-          skinType={["All"]}
-        />
-      </div>
+
     </div>
   )
 }

@@ -58,8 +58,8 @@ export default function AnalyzeButton({
     const [analysisResult, setAnalysisResult] = useState<AnalysisData | null>(() => {
         // Safely parse the existing analysis if it exists
         if (existingAnalysis) {
-            console.log('existingAnalysis:', existingAnalysis)
-            console.log('existingAnalysis type:', typeof existingAnalysis)
+            //console.log('existingAnalysis:', existingAnalysis)
+            //console.log('existingAnalysis type:', typeof existingAnalysis)
             try {
                 if (typeof existingAnalysis === 'string') {
                     return JSON.parse(existingAnalysis);
