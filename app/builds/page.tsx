@@ -28,7 +28,6 @@ import { Search } from "lucide-react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import BuildsSearchBar from '@/app/components/BuildsSearchBar';
 import { create } from 'domain';
-import DeleteRoutineButton from '@/app/components/DeleteRoutineButton';
 import { useUser } from '../context/user-provider';
 
 type Comments = {
@@ -278,12 +277,6 @@ function BuildsContent() {
 
                       {/* Temporary - always show the button for testing */}
                       <div className="flex items-center gap-2">
-                        <DeleteRoutineButton
-                          shareableId={routine.shareable_id}
-                        />
-                        <span className="text-xs text-gray-500">
-                          user: {user?.id?.substring(0, 8)}, owner: {routine.owner_user_id?.substring(0, 8)}
-                        </span>
                       </div>
                     </CardContent>
                     <CardFooter className="bg-gray-50 px-6 py-4 mt-auto">
