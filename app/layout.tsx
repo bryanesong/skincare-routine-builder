@@ -3,7 +3,7 @@ import { Poppins } from 'next/font/google'
 import './globals.css'
 import { UserProvider } from './context/user-provider'
 
-const poppins = Poppins({ 
+const poppins = Poppins({
   weight: ['400', '500', '600', '700'],
   subsets: ['latin'],
   display: 'swap',
@@ -28,8 +28,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="scroll-smooth">
-      <body className={`${poppins.className} antialiased`}>
+    <html lang="en">
+      <body>
         <UserProvider>
           {children}
         </UserProvider>

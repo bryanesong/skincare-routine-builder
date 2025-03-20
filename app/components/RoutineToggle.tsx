@@ -1,114 +1,307 @@
 'use client'
 
 import { useState } from 'react'
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs"
+import { Button } from "@/app/components/ui/button"
+import { PencilIcon, CheckIcon } from "lucide-react"
+import Image from 'next/image'
 
 interface Product {
-  product_id: string[]
-  product_name: string[]
-  product_image: string[]
+  id: string
+  product_name: string
+  product_type?: string
+  image_url?: string
 }
 
 interface RoutineToggleProps {
-  dayProducts: Array<{
-    id: number;
-    name: string;  // This is an array of strings, not product_name
-    type: string;
-    routine: string;
-    imageUrl: string;
-  }>;
-  nightProducts: Array<{
-    id: number;
-    name: string;  // This is an array of strings, not product_name
-    type: string;
-    routine: string;
-    imageUrl: string;
-  }>;
+  dayProducts: Product[]
+  nightProducts: Product[]
+  onProductsChange?: (dayProducts: Product[], nightProducts: Product[]) => void
+  readOnly?: boolean
 }
 
-export default function RoutineToggle({ dayProducts, nightProducts }: RoutineToggleProps) {
-  const [view, setView] = useState<'both' | 'morning' | 'evening'>('both')
+export default function RoutineToggle({
+  dayProducts: initialDayProducts,
+  nightProducts: initialNightProducts,
+  onProductsChange,
+  readOnly = false
+}: RoutineToggleProps) {
+  const [dayProducts, setDayProducts] = useState(initialDayProducts)
+  const [nightProducts, setNightProducts] = useState(initialNightProducts)
+  const [editMode, setEditMode] = useState(false)
+  const [activeTab, setActiveTab] = useState("day")
+
+  const handleDragEnd = (result: any) => {
+    if (!editMode) return
+
+    const { source, destination } = result
+
+    // Dropped outside the list
+    if (!destination) return
+
+    // Handle products reordering based on active tab
+    if (activeTab === 'day') {
+      const newDayProducts = Array.from(dayProducts)
+      const [removed] = newDayProducts.splice(source.index, 1)
+      newDayProducts.splice(destination.index, 0, removed)
+
+      setDayProducts(newDayProducts)
+      if (onProductsChange) {
+        onProductsChange(newDayProducts, nightProducts)
+      }
+    } else {
+      const newNightProducts = Array.from(nightProducts)
+      const [removed] = newNightProducts.splice(source.index, 1)
+      newNightProducts.splice(destination.index, 0, removed)
+
+      setNightProducts(newNightProducts)
+      if (onProductsChange) {
+        onProductsChange(dayProducts, newNightProducts)
+      }
+    }
+  }
+
+  const toggleEditMode = () => {
+    setEditMode(!editMode)
+  }
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-4">
-        {/* Toggle Container - Made smaller with max-w and centered */}
-        <div className="relative p-1 flex bg-gray-100 rounded-full max-w-md">
-          {/* Sliding highlight - Adjusted left positions */}
-          <div
-            className={`absolute transition-all duration-200 ease-in-out h-10 w-1/3 bg-red-500 rounded-full shadow-md
-              ${view === 'both' ? 'left-1' : view === 'morning' ? 'translate-x-full' : 'translate-x-[200%]'}`}
-          />
-          
-          {/* Buttons */}
-          <button
-            onClick={() => setView('both')}
-            className={`relative flex-1 rounded-full py-2 text-sm font-medium transition-colors
-              ${view === 'both' ? 'text-white' : 'text-gray-500 hover:text-gray-900'}`}
-          >
-            Both
-          </button>
-          <button
-            onClick={() => setView('morning')}
-            className={`relative flex-1 rounded-full py-2 text-sm font-medium transition-colors
-              ${view === 'morning' ? 'text-white' : 'text-gray-500 hover:text-gray-900'}`}
-          >
-            Day
-          </button>
-          <button
-            onClick={() => setView('evening')}
-            className={`relative flex-1 rounded-full py-2 text-sm font-medium transition-colors
-              ${view === 'evening' ? 'text-white' : 'text-gray-500 hover:text-gray-900'}`}
-          >
-            Night
-          </button>
+    <div className="border rounded-lg overflow-hidden">
+      <Tabs
+        defaultValue="day"
+        onValueChange={(value) => setActiveTab(value)}
+      >
+        <div className="flex items-center justify-between px-6 pt-4">
+          <TabsList>
+            <TabsTrigger value="day" className="px-4 py-2">Day Routine</TabsTrigger>
+            <TabsTrigger value="night" className="px-4 py-2">Night Routine</TabsTrigger>
+          </TabsList>
+
+          {!readOnly && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleEditMode}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              {editMode ? (
+                <>
+                  <CheckIcon className="h-4 w-4 mr-1" />
+                  Done
+                </>
+              ) : (
+                <>
+                  <PencilIcon className="h-4 w-4 mr-1" />
+                  Edit
+                </>
+              )}
+            </Button>
+          )}
         </div>
 
-        <div className={`grid ${view === 'both' ? 'md:grid-cols-2' : 'grid-cols-1'} gap-8`}>
-          {/* Morning Routine */}
-          {(view === 'both' || view === 'morning') && (
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-indigo-600">Morning Routine</h2>
-              <ul className="space-y-3">
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <TabsContent value="day" className="px-6 py-4">
+            {editMode ? (
+              <Droppable droppableId="day-products">
+                {(provided) => (
+                  <div
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
+                    className="space-y-4"
+                  >
+                    {dayProducts.map((product, index) => (
+                      <Draggable
+                        key={product.id}
+                        draggableId={product.id}
+                        index={index}
+                      >
+                        {(provided) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            className="border rounded-lg flex items-center bg-gray-50"
+                          >
+                            <div className="flex-shrink-0 w-10 flex justify-center">
+                              <span className="font-bold text-lg text-gray-500">{index + 1}.</span>
+                            </div>
+                            <div className="flex items-center p-4 flex-1">
+                              <div className="mr-4 flex-shrink-0">
+                                <div className="w-12 h-12 relative">
+                                  {product.image_url ? (
+                                    <Image
+                                      src={product.image_url}
+                                      alt={product.product_name}
+                                      fill
+                                      style={{ objectFit: 'contain' }}
+                                      className="rounded-md"
+                                    />
+                                  ) : (
+                                    <div className="w-12 h-12 bg-gray-200 rounded-md flex items-center justify-center">
+                                      <span className="text-gray-400 text-xs">No image</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <div>
+                                <p className="font-medium">{product.product_name}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                    {dayProducts.length === 0 && (
+                      <div className="p-4 bg-gray-50 rounded-lg text-center">
+                        <p className="text-gray-600">No products in your day routine.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </Droppable>
+            ) : (
+              <div className="space-y-4">
                 {dayProducts.map((product, index) => (
-                  <li key={index} className="flex items-center gap-3 p-3 border rounded-lg shadow-sm">
-                    <span className="font-medium text-gray-500 min-w-[1.5rem]">{index + 1}.</span>
-                    {product.imageUrl && (
-                      <img 
-                        src={product.imageUrl} 
-                        alt={product.name[0] || 'Product'}
-                        className="w-12 h-12 object-cover rounded-lg bg-gray-100"
-                      />
-                    )}
-                    <span className="text-lg truncate flex-1">{product.name}</span>
-                  </li>
+                  <div key={product.id} className="border rounded-lg flex items-center">
+                    <div className="flex-shrink-0 w-10 flex justify-center">
+                      <span className="font-bold text-lg text-gray-500">{index + 1}.</span>
+                    </div>
+                    <div className="flex items-center p-4 flex-1">
+                      <div className="mr-4 flex-shrink-0">
+                        <div className="w-12 h-12 relative">
+                          {product.image_url ? (
+                            <Image
+                              src={product.image_url}
+                              alt={product.product_name}
+                              fill
+                              style={{ objectFit: 'contain' }}
+                              className="rounded-md"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-gray-200 rounded-md flex items-center justify-center">
+                              <span className="text-gray-400 text-xs">No image</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="font-medium">{product.product_name}</p>
+                      </div>
+                    </div>
+                  </div>
                 ))}
-              </ul>
-            </div>
-          )}
+                {dayProducts.length === 0 && (
+                  <div className="p-4 bg-gray-50 rounded-lg text-center">
+                    <p className="text-gray-600">No products in your day routine.</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </TabsContent>
 
-          {/* Evening Routine */}
-          {(view === 'both' || view === 'evening') && (
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-indigo-600">Evening Routine</h2>
-              <ul className="space-y-3">
-                {nightProducts.map((product, index) => (
-                  <li key={index} className="flex items-center gap-3 p-3 border rounded-lg shadow-sm">
-                    <span className="font-medium text-gray-500 min-w-[1.5rem]">{index + 1}.</span>
-                    {product.imageUrl && (
-                      <img 
-                        src={product.imageUrl} 
-                        alt={product.name[0] || 'Product'}
-                        className="w-12 h-12 object-cover rounded-lg bg-gray-100"
-                      />
+          <TabsContent value="night" className="px-6 py-4">
+            {editMode ? (
+              <Droppable droppableId="night-products">
+                {(provided) => (
+                  <div
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
+                    className="space-y-4"
+                  >
+                    {nightProducts.map((product, index) => (
+                      <Draggable
+                        key={product.id}
+                        draggableId={product.id}
+                        index={index}
+                      >
+                        {(provided) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            className="border rounded-lg flex items-center bg-gray-50"
+                          >
+                            <div className="flex-shrink-0 w-10 flex justify-center">
+                              <span className="font-bold text-lg text-gray-500">{index + 1}.</span>
+                            </div>
+                            <div className="flex items-center p-4 flex-1">
+                              <div className="mr-4 flex-shrink-0">
+                                <div className="w-12 h-12 relative">
+                                  {product.image_url ? (
+                                    <Image
+                                      src={product.image_url}
+                                      alt={product.product_name}
+                                      fill
+                                      style={{ objectFit: 'contain' }}
+                                      className="rounded-md"
+                                    />
+                                  ) : (
+                                    <div className="w-12 h-12 bg-gray-200 rounded-md flex items-center justify-center">
+                                      <span className="text-gray-400 text-xs">No image</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <div>
+                                <p className="font-medium">{product.product_name}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                    {nightProducts.length === 0 && (
+                      <div className="p-4 bg-gray-50 rounded-lg text-center">
+                        <p className="text-gray-600">No products in your night routine.</p>
+                      </div>
                     )}
-                    <span className="text-lg truncate flex-1">{product.name}</span>
-                  </li>
+                  </div>
+                )}
+              </Droppable>
+            ) : (
+              <div className="space-y-4">
+                {nightProducts.map((product, index) => (
+                  <div key={product.id} className="border rounded-lg flex items-center">
+                    <div className="flex-shrink-0 w-10 flex justify-center">
+                      <span className="font-bold text-lg text-gray-500">{index + 1}.</span>
+                    </div>
+                    <div className="flex items-center p-4 flex-1">
+                      <div className="mr-4 flex-shrink-0">
+                        <div className="w-12 h-12 relative">
+                          {product.image_url ? (
+                            <Image
+                              src={product.image_url}
+                              alt={product.product_name}
+                              fill
+                              style={{ objectFit: 'contain' }}
+                              className="rounded-md"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-gray-200 rounded-md flex items-center justify-center">
+                              <span className="text-gray-400 text-xs">No image</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="font-medium">{product.product_name}</p>
+                      </div>
+                    </div>
+                  </div>
                 ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      </div>
+                {nightProducts.length === 0 && (
+                  <div className="p-4 bg-gray-50 rounded-lg text-center">
+                    <p className="text-gray-600">No products in your night routine.</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </TabsContent>
+        </DragDropContext>
+      </Tabs>
     </div>
   )
 } 
