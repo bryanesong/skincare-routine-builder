@@ -38,7 +38,7 @@ const ProductsStep = forwardRef<any, ProductsStepProps>((props, ref) => {
     const [showNightSearch, setShowNightSearch] = useState(false)
     const [morningSearchTerm, setMorningSearchTerm] = useState("")
     const [nightSearchTerm, setNightSearchTerm] = useState("")
-    const [filteredProducts, setFilteredProducts] = useState<typeof MOCK_PRODUCTS>([])
+    const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
     const [morningProducts, setMorningProducts] = useState<Product[]>([])
     const [nightProducts, setNightProducts] = useState<Product[]>([])
     const [isLoading, setIsLoading] = useState(false)
@@ -258,7 +258,7 @@ const ProductsStep = forwardRef<any, ProductsStepProps>((props, ref) => {
                                             onClick={() => handleProductSelect(product)}
                                         >
                                             <img
-                                                src={product.imageUrl}
+                                                src={product.image_url}
                                                 alt={product.name}
                                                 className="w-10 h-10 rounded-md object-cover"
                                                 onError={(e) => {
