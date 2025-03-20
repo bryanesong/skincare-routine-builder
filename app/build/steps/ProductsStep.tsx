@@ -5,29 +5,24 @@ import { Label } from "../../components/ui/label"
 import { Button } from "../../components/ui/button"
 import { Info } from "lucide-react"
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
+import { createClient } from '@/utils/supabase/client'
 
 const placeholder_image = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTXxZR0_1ISIJx_T4oB5-5OJVSNgSMFLe8eCw&s'
-// Add this mock data at the top of the file
-const MOCK_PRODUCTS = [
-    { id: 1, name: "Gentle Foaming Cleanser", type: "Cleanser", routine: "both", imageUrl: placeholder_image },
-    { id: 2, name: "Vitamin C Serum", type: "Serum", routine: "morning", imageUrl: placeholder_image },
-    { id: 3, name: "Hydrating Moisturizer SPF 30", type: "Moisturizer", routine: "morning", imageUrl: placeholder_image },
-    { id: 4, name: "Retinol Night Cream", type: "Cream", routine: "night", imageUrl: placeholder_image },
-    { id: 5, name: "Niacinamide Serum", type: "Serum", routine: "both", imageUrl: placeholder_image },
-    { id: 6, name: "AHA/BHA Exfoliant", type: "Exfoliant", routine: "night", imageUrl: placeholder_image },
-]
 
 interface Product {
-    id: number
+    id: string
+    brand: string
     name: string
     type: string
-    routine: string
-    imageUrl: string
+    image_url?: string
+    ingredients?: any[]
+    afterUse?: any[]
+    country?: string
 }
 
 interface ProductsStepProps {
-  formData: any;
-  onNext: (data: any) => void;
+    formData: any;
+    onNext: (data: any) => void;
 }
 
 const ProductsStep = forwardRef<any, ProductsStepProps>((props, ref) => {
@@ -46,21 +41,51 @@ const ProductsStep = forwardRef<any, ProductsStepProps>((props, ref) => {
     const [filteredProducts, setFilteredProducts] = useState<typeof MOCK_PRODUCTS>([])
     const [morningProducts, setMorningProducts] = useState<Product[]>([])
     const [nightProducts, setNightProducts] = useState<Product[]>([])
+    const [isLoading, setIsLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
-        const searchTerm = showMorningSearch ? morningSearchTerm : nightSearchTerm
-        const routine = showMorningSearch ? 'morning' : 'night'
-        
-        if (searchTerm.length > 0) {
-            const filtered = MOCK_PRODUCTS.filter(product => 
-                (product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                product.type.toLowerCase().includes(searchTerm.toLowerCase())) &&
-                (product.routine === routine || product.routine === 'both')
-            )
-            setFilteredProducts(filtered)
-        } else {
-            setFilteredProducts([])
+        const searchProducts = async () => {
+            const searchTerm = showMorningSearch ? morningSearchTerm : nightSearchTerm
+
+            if (searchTerm.length === 0) {
+                setFilteredProducts([])
+                return
+            }
+
+            setIsLoading(true)
+            setError(null)
+
+            try {
+                const supabase = createClient()
+
+                const { data, error } = await supabase
+                    .from('products')
+                    .select('id, brand, name, type, image_url')
+                    .or(`name.ilike.%${searchTerm}%,brand.ilike.%${searchTerm}%,type.ilike.%${searchTerm}%`)
+                    .limit(10)
+
+                if (error) throw error
+
+                const transformedProducts = data.map(product => ({
+                    ...product,
+                    imageUrl: product.image_url || placeholder_image,
+                    routine: 'both'
+                }))
+
+                setFilteredProducts(transformedProducts)
+            } catch (err) {
+                console.error('Error fetching products:', err)
+                setError('Failed to load products')
+                setFilteredProducts([])
+            } finally {
+                setIsLoading(false)
+            }
         }
+
+        const timeoutId = setTimeout(searchProducts, 300)
+
+        return () => clearTimeout(timeoutId)
     }, [morningSearchTerm, nightSearchTerm, showMorningSearch, showNightSearch])
 
     const handlePreferenceChange = (key: string, value: any) => {
@@ -74,10 +99,10 @@ const ProductsStep = forwardRef<any, ProductsStepProps>((props, ref) => {
     const handleRoutineClick = (routine: 'morning' | 'night') => {
         if (routine === 'morning') {
             setShowMorningSearch(!showMorningSearch)
-            setShowNightSearch(false) // Close night search if open
+            setShowNightSearch(false)
         } else {
             setShowNightSearch(!showNightSearch)
-            setShowMorningSearch(false) // Close morning search if open
+            setShowMorningSearch(false)
         }
     }
 
@@ -115,9 +140,9 @@ const ProductsStep = forwardRef<any, ProductsStepProps>((props, ref) => {
                     className="w-full max-w-md mt-4"
                 >
                     {items.map((item, index) => (
-                        <Draggable 
-                            key={`${item.id}-${index}`} 
-                            draggableId={`${item.id}-${index}`} 
+                        <Draggable
+                            key={`${item.id}-${index}`}
+                            draggableId={`${item.id}-${index}`}
                             index={index}
                         >
                             {(provided) => (
@@ -130,8 +155,8 @@ const ProductsStep = forwardRef<any, ProductsStepProps>((props, ref) => {
                                     <span className="flex items-center justify-center w-6 h-6 text-sm font-medium text-gray-500 bg-gray-100 rounded-full">
                                         {index + 1}
                                     </span>
-                                    <img 
-                                        src={item.imageUrl} 
+                                    <img
+                                        src={item.image_url}
                                         alt={item.name}
                                         className="w-10 h-10 rounded-md object-cover"
                                     />
@@ -141,10 +166,10 @@ const ProductsStep = forwardRef<any, ProductsStepProps>((props, ref) => {
                                     </div>
                                     <button
                                         onClick={() => {
-                                            const newItems = routineType === 'morning' 
+                                            const newItems = routineType === 'morning'
                                                 ? morningProducts.filter((_, i) => i !== index)
                                                 : nightProducts.filter((_, i) => i !== index)
-                                            routineType === 'morning' 
+                                            routineType === 'morning'
                                                 ? setMorningProducts(newItems)
                                                 : setNightProducts(newItems)
                                         }}
@@ -164,7 +189,6 @@ const ProductsStep = forwardRef<any, ProductsStepProps>((props, ref) => {
         </Droppable>
     )
 
-    // This exposes the getData method to the parent component
     useImperativeHandle(ref, () => ({
         getData: () => ({
             morningProducts,
@@ -181,17 +205,17 @@ const ProductsStep = forwardRef<any, ProductsStepProps>((props, ref) => {
                 <p className="text-gray-400 italic text-sm transition-colors">
                     Click the tabs below to specify your routine, if it applies.
                 </p>
-                
+
                 <div className="flex flex-col items-center gap-6">
                     <div className="flex justify-center gap-4">
-                        <Button 
+                        <Button
                             variant="outline"
                             onClick={() => handleRoutineClick('morning')}
                             className={`w-40 ${showMorningSearch ? 'ring-2 ring-blue-500' : ''}`}
                         >
                             Morning Routine
                         </Button>
-                        <Button 
+                        <Button
                             variant="outline"
                             onClick={() => handleRoutineClick('night')}
                             className={`w-40 ${showNightSearch ? 'ring-2 ring-blue-500' : ''}`}
@@ -206,23 +230,45 @@ const ProductsStep = forwardRef<any, ProductsStepProps>((props, ref) => {
                                 type="text"
                                 placeholder={`Search ${showMorningSearch ? 'morning' : 'night'} routine products...`}
                                 value={showMorningSearch ? morningSearchTerm : nightSearchTerm}
-                                onChange={(e) => showMorningSearch 
+                                onChange={(e) => showMorningSearch
                                     ? setMorningSearchTerm(e.target.value)
                                     : setNightSearchTerm(e.target.value)
                                 }
                                 className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
-                            
-                            {filteredProducts.length > 0 && (
+
+                            {isLoading && (
+                                <div className="absolute right-3 top-2.5">
+                                    <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                </div>
+                            )}
+
+                            {error && (
+                                <div className="absolute w-full mt-1 bg-red-50 border border-red-200 rounded-md p-2 text-red-600 text-sm">
+                                    {error}
+                                </div>
+                            )}
+
+                            {filteredProducts.length > 0 && !isLoading && (
                                 <div className="absolute w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto z-10">
                                     {filteredProducts.map((product) => (
                                         <button
                                             key={product.id}
-                                            className="w-full px-4 py-2 text-left hover:bg-gray-100 focus:outline-none focus:bg-gray-100"
+                                            className="w-full px-4 py-2 text-left hover:bg-gray-100 focus:outline-none focus:bg-gray-100 flex items-center gap-3"
                                             onClick={() => handleProductSelect(product)}
                                         >
-                                            <div className="font-medium">{product.name}</div>
-                                            <div className="text-sm text-gray-500">{product.type}</div>
+                                            <img
+                                                src={product.imageUrl}
+                                                alt={product.name}
+                                                className="w-10 h-10 rounded-md object-cover"
+                                                onError={(e) => {
+                                                    (e.target as HTMLImageElement).src = placeholder_image
+                                                }}
+                                            />
+                                            <div>
+                                                <div className="font-medium">{product.brand} {product.name}</div>
+                                                <div className="text-sm text-gray-500">{product.type}</div>
+                                            </div>
                                         </button>
                                     ))}
                                 </div>

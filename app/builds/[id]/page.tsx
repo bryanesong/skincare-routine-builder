@@ -133,6 +133,7 @@ export default async function RoutineDetail({ params }: { params: { id: string }
                   dayProducts={routine.day_products || []}
                   nightProducts={routine.night_products || []}
                   ownerId={routine.owner_user_id}
+                  shareableId={routine.shareable_id}
                 />
               )}
             </div>

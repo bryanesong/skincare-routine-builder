@@ -22,13 +22,15 @@ import {
     verticalListSortingStrategy
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { createClient } from '@/utils/supabase/client'
 
 // Import the styles if any are needed from SkincareRoutineBuildTemplate
 // import styles from '...'
 
 interface Product {
     id: string
-    product_name: string
+    brand: string
+    name: string
     product_type?: string
     image_url?: string
     uniqueId?: string // Added for dnd-kit
@@ -38,6 +40,7 @@ interface RoutineDisplayProps {
     dayProducts: Product[]
     nightProducts: Product[]
     ownerId: string
+    shareableId: string
     onProductsChange?: (dayProducts: Product[], nightProducts: Product[]) => void
 }
 
@@ -80,7 +83,7 @@ function SortableItem({ product, index, isEditing }: {
                         {product.image_url ? (
                             <img
                                 src={product.image_url}
-                                alt={product.product_name}
+                                alt={`${product.brand} ${product.name}`}
                                 className="w-12 h-12 object-contain rounded-md"
                             />
                         ) : (
@@ -90,18 +93,33 @@ function SortableItem({ product, index, isEditing }: {
                         )}
                     </div>
                 </div>
-                <div>
-                    <p className="font-medium">{product.product_name}</p>
+                <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                        <p className="font-medium">{product.brand}</p>
+                        <span className="text-xs px-2 py-1 bg-gray-100 rounded-full text-gray-600">
+                            {product.product_type}
+                        </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">{product.name}</p>
                 </div>
             </div>
         </div>
     )
 }
 
+// Add this interface for the database routine
+interface RoutineOrder {
+    user_id: string
+    day_routine: Product[]
+    night_routine: Product[]
+    updated_at?: string
+}
+
 export default function RoutineDisplay({
     dayProducts: initialDayProducts,
     nightProducts: initialNightProducts,
     ownerId,
+    shareableId,
     onProductsChange
 }: RoutineDisplayProps) {
     // Ensure all products have uniqueId for dnd-kit
@@ -121,6 +139,9 @@ export default function RoutineDisplay({
     const [dayEditMode, setDayEditMode] = useState(false)
     const [nightEditMode, setNightEditMode] = useState(false)
     const { user } = useUser() // Get current user
+    const [isSaving, setIsSaving] = useState(false)
+    const [saveError, setError] = useState<string | null>(null)
+    const supabase = createClient()
 
     const isOwner = user?.id === ownerId
 
@@ -131,6 +152,46 @@ export default function RoutineDisplay({
             coordinateGetter: sortableKeyboardCoordinates,
         })
     )
+
+    // Add function to save routine to database
+    const saveRoutineToDatabase = async (dayRoutine: Product[], nightRoutine: Product[]) => {
+        setIsSaving(true)
+        setError(null)
+
+        try {
+            // Remove uniqueIds before saving
+            const cleanDayRoutine = dayRoutine.map(({ uniqueId, ...rest }) => rest)
+            const cleanNightRoutine = nightRoutine.map(({ uniqueId, ...rest }) => rest)
+
+            const { error } = await supabase
+                .from('community_builds')
+                .update({
+                    day_products: cleanDayRoutine,
+                    night_products: cleanNightRoutine,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('shareable_id', shareableId) // Add where clause to update the correct row
+
+            if (error) {
+                console.error('Error saving routine:', error)
+                setError('Failed to save routine changes')
+                return
+            }
+
+            // Call the callback if provided
+            if (onProductsChange) {
+                onProductsChange(cleanDayRoutine, cleanNightRoutine)
+            }
+        } catch (err) {
+            console.error('Error saving routine:', err)
+            setError('Failed to save routine changes')
+            // Revert changes if save fails
+            setDayProducts(addUniqueIds(initialDayProducts || [], 'day'))
+            setNightProducts(addUniqueIds(initialNightProducts || [], 'night'))
+        } finally {
+            setIsSaving(false)
+        }
+    }
 
     // Handle morning routine drag end
     const handleMorningDragEnd = (event: DragEndEvent) => {
@@ -178,9 +239,30 @@ export default function RoutineDisplay({
         }
     }
 
-    // Toggle edit modes
-    const toggleDayEditMode = () => setDayEditMode(!dayEditMode)
-    const toggleNightEditMode = () => setNightEditMode(!nightEditMode)
+    // Update toggle functions to save changes
+    const toggleDayEditMode = async () => {
+        if (dayEditMode) {
+            // Finishing edit mode, save changes if needed
+            const hasChanges = JSON.stringify(dayProducts.map(p => p.id)) !==
+                JSON.stringify(initialDayProducts.map(p => p.id))
+            if (hasChanges) {
+                await saveRoutineToDatabase(dayProducts, nightProducts)
+            }
+        }
+        setDayEditMode(!dayEditMode)
+    }
+
+    const toggleNightEditMode = async () => {
+        if (nightEditMode) {
+            // Finishing edit mode, save changes if needed
+            const hasChanges = JSON.stringify(nightProducts.map(p => p.id)) !==
+                JSON.stringify(initialNightProducts.map(p => p.id))
+            if (hasChanges) {
+                await saveRoutineToDatabase(dayProducts, nightProducts)
+            }
+        }
+        setNightEditMode(!nightEditMode)
+    }
 
     return (
         <div className="space-y-8">
@@ -194,12 +276,17 @@ export default function RoutineDisplay({
                             variant="ghost"
                             size="sm"
                             onClick={toggleDayEditMode}
+                            disabled={isSaving}
                             className="text-pink-600 hover:text-pink-700 hover:bg-pink-100"
                         >
                             {dayEditMode ? (
                                 <>
-                                    <CheckIcon className="h-4 w-4 mr-1" />
-                                    Done
+                                    {isSaving ? (
+                                        <div className="h-4 w-4 border-2 border-pink-600 border-t-transparent rounded-full animate-spin mr-1" />
+                                    ) : (
+                                        <CheckIcon className="h-4 w-4 mr-1" />
+                                    )}
+                                    {isSaving ? 'Saving...' : 'Done'}
                                 </>
                             ) : (
                                 <>
@@ -210,6 +297,13 @@ export default function RoutineDisplay({
                         </Button>
                     )}
                 </div>
+
+                {/* Add error message display */}
+                {saveError && (
+                    <div className="px-6 py-2 text-red-600 text-sm bg-red-50">
+                        {saveError}
+                    </div>
+                )}
 
                 <div className="px-6 py-4">
                     {dayEditMode && (
@@ -253,7 +347,7 @@ export default function RoutineDisplay({
                                                     {product.image_url ? (
                                                         <img
                                                             src={product.image_url}
-                                                            alt={product.product_name}
+                                                            alt={`${product.brand} ${product.name}`}
                                                             className="w-12 h-12 object-contain rounded-md"
                                                         />
                                                     ) : (
@@ -263,8 +357,14 @@ export default function RoutineDisplay({
                                                     )}
                                                 </div>
                                             </div>
-                                            <div>
-                                                <p className="font-medium">{product.product_name}</p>
+                                            <div className="flex-1">
+                                                <div className="flex items-center justify-between">
+                                                    <p className="font-medium">{product.brand}</p>
+                                                    <span className="text-xs px-2 py-1 bg-gray-100 rounded-full text-gray-600">
+                                                        {product.product_type}
+                                                    </span>
+                                                </div>
+                                                <p className="text-sm text-gray-600 mt-1">{product.name}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -289,12 +389,17 @@ export default function RoutineDisplay({
                             variant="ghost"
                             size="sm"
                             onClick={toggleNightEditMode}
+                            disabled={isSaving}
                             className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-100"
                         >
                             {nightEditMode ? (
                                 <>
-                                    <CheckIcon className="h-4 w-4 mr-1" />
-                                    Done
+                                    {isSaving ? (
+                                        <div className="h-4 w-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mr-1" />
+                                    ) : (
+                                        <CheckIcon className="h-4 w-4 mr-1" />
+                                    )}
+                                    {isSaving ? 'Saving...' : 'Done'}
                                 </>
                             ) : (
                                 <>
@@ -348,7 +453,7 @@ export default function RoutineDisplay({
                                                     {product.image_url ? (
                                                         <img
                                                             src={product.image_url}
-                                                            alt={product.product_name}
+                                                            alt={`${product.brand} ${product.name}`}
                                                             className="w-12 h-12 object-contain rounded-md"
                                                         />
                                                     ) : (
@@ -358,8 +463,14 @@ export default function RoutineDisplay({
                                                     )}
                                                 </div>
                                             </div>
-                                            <div>
-                                                <p className="font-medium">{product.product_name}</p>
+                                            <div className="flex-1">
+                                                <div className="flex items-center justify-between">
+                                                    <p className="font-medium">{product.brand}</p>
+                                                    <span className="text-xs px-2 py-1 bg-gray-100 rounded-full text-gray-600">
+                                                        {product.product_type}
+                                                    </span>
+                                                </div>
+                                                <p className="text-sm text-gray-600 mt-1">{product.name}</p>
                                             </div>
                                         </div>
                                     </div>
