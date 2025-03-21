@@ -77,6 +77,7 @@ const ProfilePhotoSelector = ({ userId, userAuthId }: { userId: string, userAuth
                 console.error('Error updating profile photo:', error)
                 return
             } else {
+                console.log('userAuthId', userAuthId)
                 console.log('Profile photo updated successfully:', photoUrl)
             }
 

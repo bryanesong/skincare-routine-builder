@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers'
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from '@/utils/supabase/client'
 import { notFound } from 'next/navigation'
 import Header from '@/app/components/Header'
 import Footer from '@/app/components/Footer'
@@ -8,29 +8,22 @@ import RoutineToggle from '../../components/RoutineToggle'
 import ShareButton from '../../components/ShareButton'
 import LikeButton from '../../components/LikeButton'
 import AnalyzeButton from '../../components/AnalyzeButton'
-import OwnerContent from '../../components/OwnerContent'
-import OwnerContentWrapper from '@/app/components/OwnerContent'
 import CommentSection from '@/app/components/CommentSection'
 import RoutineDisplay from '../../components/RoutineDisplay'
-import { Button } from "@/app/components/ui/button"
-import { Trash2 } from "lucide-react"
 import DeleteButton from '../../components/DeleteButton'
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
+import EditableDescription from '../../components/EditableDescription'
 
 // This is a server component (no 'use client' directive)
 export default async function RoutineDetail({ params }: { params: { id: string } }) {
-  const supabase = createClient()
-
-  // Get user ID from cookies using Supabase's auth helpers
   const cookieStore = cookies()
-  const supabaseWithCookies = createServerComponentClient({ cookies: () => cookieStore })
-  const { data: { session } } = await supabaseWithCookies.auth.getSession()
-  const userId = session?.user?.id
 
-  //console.log('User ID from cookies:', userId)
+  const supabase = await createClient()
+  // Get user session server-side
+  const { data: { user } } = await supabase.auth.getUser()
+  const userId = user?.id
 
   // This fetches the routine data including comments
-  const { data: routine, error } = await (await supabase)
+  const { data: routine, error } = await supabase
     .from('community_builds')
     .select()  // This includes all fields, including comments
     .eq('shareable_id', params.id)
@@ -63,22 +56,10 @@ export default async function RoutineDetail({ params }: { params: { id: string }
   const userDisplayName = userData?.display_name || routine.user_name
 
   // Check if the current user is the owner of the routine
-  //console.log('User ID from cookies:', userId)
-  //console.log('Routine owner ID:', routine.owner_user_id)
-
   const isOwner = userId && routine.owner_user_id &&
     userId.toString() === routine.owner_user_id.toString()
 
-  //console.log('Is owner:', isOwner)
-
   // Debug the analysis notes
-  //console.log('Analysis notes direct:', json_data.analysis)
-  //console.log('ROUTINE notes:', routine.analysis)
-
-  //console.log('ORIGINAL comments:', routine.comments)
-
-  //console.log('Serialized analysis notes:', serializedAnalysisNotes)
-  //console.log('isOwner', isOwner)
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -139,10 +120,11 @@ export default async function RoutineDetail({ params }: { params: { id: string }
             </div>
 
             {/* Description */}
-            <div className="mb-8">
-              <h2 className="text-lg font-semibold mb-2">Routine Description</h2>
-              <p className="text-gray-600">{routine.routine_description}</p>
-            </div>
+            <EditableDescription
+              initialDescription={routine.routine_description}
+              isOwner={isOwner}
+              shareableId={routine.shareable_id}
+            />
 
             {/* Interaction Buttons */}
             <div className="flex items-center gap-4 pt-4 border-t">
@@ -161,6 +143,7 @@ export default async function RoutineDetail({ params }: { params: { id: string }
               routineId={params.id}
               ownerId={routine.owner_user_id}
               existingAnalysis={json_data.analysis}
+              current_routine={routine}
             />
 
             <CommentSection
