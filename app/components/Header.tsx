@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Button } from "../components/ui/button"
 import { Menu, User, Settings, LogOut } from 'lucide-react'
 import { createClient } from '@/utils/supabase/component'
-import { useUser } from '../context/user-provider'
+import { useUser } from '@/app/context/user-provider'
 
 interface HeaderProps {
   onAuthChange?: (userId: string | null) => void;
@@ -19,6 +19,9 @@ export default function Header({ onAuthChange }: HeaderProps = {}) {
   const [userProfilePhoto, setUserProfilePhoto] = useState<string | null>(null)
   const [profileLoaded, setProfileLoaded] = useState(false)
 
+  // Add this ref at the top level of your component
+  const currentAvatarRef = useRef<string | null>(null);
+
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
@@ -27,13 +30,13 @@ export default function Header({ onAuthChange }: HeaderProps = {}) {
   const { user, isLoading } = useUser()
 
   // Add debug logging
-  useEffect(() => {
-    console.log('Header Auth State:', {
-      user,
-      isLoading,
-      cookies: document.cookie // Check if auth cookie exists
-    })
-  }, [user, isLoading])
+  // useEffect(() => {
+  //   console.log('Header Auth State:', {
+  //     user,
+  //     isLoading,
+  //     cookies: document.cookie // Check if auth cookie exists
+  //   })
+  // }, [user, isLoading])
 
   // Notify parent component about auth changes (only when user changes)
   useEffect(() => {
@@ -48,6 +51,7 @@ export default function Header({ onAuthChange }: HeaderProps = {}) {
 
     const fetchUserProfile = async () => {
       try {
+        console.log('Fetching profile photo for user from HEADER:', user.id)
         const { data, error } = await supabase
           .from('user_data_personal')
           .select('avatar_url')
@@ -75,9 +79,11 @@ export default function Header({ onAuthChange }: HeaderProps = {}) {
   useEffect(() => {
     if (!user) return;
 
-    // Create a unique channel name
-    const channelName = `profile-changes-${user.id}`
+    // Update the ref whenever userProfilePhoto changes
+    currentAvatarRef.current = userProfilePhoto;
 
+    // Create channel only once per user session
+    const channelName = `profile-changes-${user.id}`;
     let channel;
 
     try {
@@ -92,23 +98,21 @@ export default function Header({ onAuthChange }: HeaderProps = {}) {
             filter: `id=eq.${user.id}`
           },
           (payload) => {
-            // Only update if the avatar_url has changed
-            if (payload.new['avatar_url'] !== userProfilePhoto) {
-              setUserProfilePhoto(payload.new['avatar_url'])
+            const newAvatarUrl = payload.new['avatar_url'];
+            if (newAvatarUrl !== currentAvatarRef.current) {
+              setUserProfilePhoto(newAvatarUrl);
             }
           }
         )
-        .subscribe()
-    } catch (channelError) {
-      console.error('Error setting up realtime channel:', channelError)
+        .subscribe();
+    } catch (error) {
+      console.error('Subscription error:', error);
     }
 
     return () => {
-      if (channel) {
-        supabase.removeChannel(channel)
-      }
-    }
-  }, [user, supabase]) // Removed userProfilePhoto dependency to prevent re-subscriptions
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, userProfilePhoto]); // Added userProfilePhoto to update the ref
 
   // Handle scroll events
   useEffect(() => {
@@ -134,7 +138,7 @@ export default function Header({ onAuthChange }: HeaderProps = {}) {
       console.error('Error signing out:', error)
     }
   }
-  console.log('user', user)
+  //console.log('user', user)
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white/90 backdrop-blur-md shadow-md' : 'bg-transparent'}`}>
       <div className="container mx-auto px-4">
