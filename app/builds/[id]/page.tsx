@@ -16,11 +16,10 @@ import EditableDescription from '../../components/EditableDescription'
 // This is a server component (no 'use client' directive)
 export default async function RoutineDetail({ params }: { params: { id: string } }) {
   const cookieStore = cookies()
-
   const supabase = await createClient()
-  // Get user session server-side
+  // Get user session client-side
   const { data: { user } } = await supabase.auth.getUser()
-  const userId = user?.id
+  const userId = user
 
   // This fetches the routine data including comments
   const { data: routine, error } = await supabase
@@ -131,7 +130,6 @@ export default async function RoutineDetail({ params }: { params: { id: string }
               <LikeButton
                 buildId={params.id}
                 initialLikes={routine.likes_id || []}
-                likesCount={routine.likes_id?.length || 0}
               />
               <ShareButton shareableId={routine.shareable_id} />
             </div>
