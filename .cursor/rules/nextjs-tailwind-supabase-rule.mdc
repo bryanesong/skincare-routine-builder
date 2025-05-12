@@ -131,6 +131,6 @@ alwaysApply: false
     - Keep the README files up-to-date with setup instructions and project overview.
     - Document Supabase schema, RLS policies, and Edge Functions when used.
 
-    Refer to Next.js documentation for Data Fetching, Rendering, and Routing best practices and to the
+    Refer to official documentation for Data Fetching, Rendering, and Routing best practices and to the
     Vercel AI SDK documentation and OpenAI/Anthropic API guidelines for best practices in AI integration.
     

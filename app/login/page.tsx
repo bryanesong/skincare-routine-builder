@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { login, signup } from '@/app/login/action'
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
@@ -40,6 +40,17 @@ export default function LoginPage() {
   // Correct initialization of Supabase client
   const supabase = createClient()
 
+  // Get the site URL dynamically based on environment
+  const getBaseUrl = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      // In production, use the current hostname
+      // This ensures redirects go to the same domain the user is currently on
+      return window.location.origin
+    }
+    // Fallback for server-side
+    return process.env.NEXT_PUBLIC_SITE_URL || ''
+  }, [])
+
   // Handle auth status change from Header component
   const handleAuthChange = (userId: string | null) => {
     setIsLoggedIn(!!userId)
@@ -47,12 +58,13 @@ export default function LoginPage() {
 
     // Optional: Redirect if already logged in
     if (userId) {
-      router.push('/dashboard')
+      // This will use relative URL in development and absolute URL in production
+      router.push(process.env.NEXT_PUBLIC_DASHBOARD_URL || '/dashboard')
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault() // Prevent default form submission behavior
+    e.preventDefault()
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -66,7 +78,7 @@ export default function LoginPage() {
       }
 
       // Successful login
-      router.push('/dashboard')
+      router.push(process.env.NEXT_PUBLIC_DASHBOARD_URL || '/dashboard')
     } catch (err) {
       console.error('Login error:', err)
       setError('An unexpected error occurred')
@@ -76,15 +88,34 @@ export default function LoginPage() {
   const handleOAuthLogin = async (provider: 'google' | 'github' | 'facebook') => {
     try {
       setOauthLoading(true)
-      const { error } = await supabase.auth.signInWithOAuth({
+      setError(null) // Clear any previous errors
+
+      console.log('Starting OAuth login process...')
+
+      // Simple redirect to dashboard after auth
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
+        options: {
+          redirectTo: window.location.origin + '/dashboard',
+          // Request minimal scopes to reduce complications
+          scopes: 'email profile',
+        }
       })
+
       if (error) {
-        setError(error.message)
+        console.error('OAuth initialization error:', error)
+        setError(`Authentication error: ${error.message}`)
+        return
       }
+
+      console.log('OAuth process initiated. User will be redirected to Google.')
+
+      // No need to do anything else here - the user will be redirected to Google
+      // and then back to your redirectTo URL after authentication
+
     } catch (err) {
-      console.error('OAuth login error:', err)
-      setError('An unexpected error occurred during OAuth login')
+      console.error('Unexpected OAuth error:', err)
+      setError('An unexpected error occurred. Please try again.')
     } finally {
       setOauthLoading(false)
     }

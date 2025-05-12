@@ -131,7 +131,8 @@ export default function Header({ onAuthChange }: HeaderProps = {}) {
 
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut()
+      const response = await supabase.auth.signOut()
+      console.log('Sign out response:', response)
       setIsUserMenuOpen(false)
       router.push('/')
     } catch (error) {
